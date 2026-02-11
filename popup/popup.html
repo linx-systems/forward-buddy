@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>ForwardEmail</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <!-- ====== Header ====== -->
+  <header class="header">
+    <span class="header-title">ForwardEmail</span>
+    <button id="btn-settings" class="btn-icon" title="Settings">&#x2699;</button>
+  </header>
+
+  <!-- ====== Not configured state ====== -->
+  <div id="view-noconfig" class="view hidden">
+    <div class="empty-state">
+      <p data-i18n="notConfigured">No API token configured.</p>
+      <button id="btn-open-settings" class="btn btn-primary" data-i18n="btnOpenSettings">Open Settings</button>
+    </div>
+  </div>
+
+  <!-- ====== Alias list view ====== -->
+  <div id="view-list" class="view hidden">
+    <div class="toolbar">
+      <select id="domain-select" class="domain-select"></select>
+      <button id="btn-new-alias" class="btn btn-primary btn-sm">+ <span data-i18n="btnNewAlias">New Alias</span></button>
+    </div>
+
+    <div class="search-wrap">
+      <input id="search" type="text" data-i18n-placeholder="placeholderSearch" placeholder="Search aliases\u2026">
+    </div>
+
+    <div id="alias-list" class="alias-list"></div>
+
+    <div id="list-loading" class="loading hidden">
+      <div class="spinner"></div>
+    </div>
+
+    <div id="list-empty" class="empty-state hidden">
+      <p data-i18n="noAliases">No aliases found.</p>
+      <button class="btn btn-primary btn-sm btn-create-from-empty">+ <span data-i18n="btnNewAlias">New Alias</span></button>
+    </div>
+
+    <div id="list-error" class="error-msg hidden"></div>
+  </div>
+
+  <!-- ====== Alias detail/edit view ====== -->
+  <div id="view-detail" class="view hidden">
+    <button id="detail-back" class="btn-back">&larr; <span data-i18n="btnBack">Back</span></button>
+
+    <div class="detail-header">
+      <span id="detail-email" class="detail-email"></span>
+      <span id="detail-badge" class="badge"></span>
+    </div>
+
+    <div class="form-group">
+      <label data-i18n="labelEnabled">Enabled</label>
+      <label class="toggle">
+        <input id="detail-enabled" type="checkbox">
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+
+    <div class="form-group">
+      <label data-i18n="labelRecipients">Recipients (one per line)</label>
+      <textarea id="detail-recipients" rows="3"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label data-i18n="labelDescription">Description</label>
+      <input id="detail-description" type="text">
+    </div>
+
+    <div class="form-group">
+      <label data-i18n="labelLabels">Labels (comma-separated)</label>
+      <input id="detail-labels" type="text">
+    </div>
+
+    <div class="form-group inline-toggles">
+      <label class="toggle-row">
+        <span data-i18n="labelImap">IMAP Storage</span>
+        <label class="toggle"><input id="detail-imap" type="checkbox"><span class="toggle-slider"></span></label>
+      </label>
+      <label class="toggle-row">
+        <span data-i18n="labelPgp">PGP Encryption</span>
+        <label class="toggle"><input id="detail-pgp" type="checkbox"><span class="toggle-slider"></span></label>
+      </label>
+      <label class="toggle-row">
+        <span data-i18n="labelRecipientVerification">Recipient Verification</span>
+        <label class="toggle"><input id="detail-verification" type="checkbox"><span class="toggle-slider"></span></label>
+      </label>
+    </div>
+
+    <div class="form-group timestamps">
+      <small id="detail-created"></small>
+      <small id="detail-updated"></small>
+    </div>
+
+    <div class="button-row">
+      <button id="btn-save-detail" class="btn btn-primary" data-i18n="btnSaveChanges">Save Changes</button>
+      <button id="btn-gen-password" class="btn btn-secondary" data-i18n="btnGeneratePassword">Generate Password</button>
+    </div>
+    <button id="btn-delete-alias" class="btn btn-danger" data-i18n="btnDelete">Delete Alias</button>
+
+    <div id="detail-msg" class="msg hidden"></div>
+  </div>
+
+  <!-- ====== Create alias view ====== -->
+  <div id="view-create" class="view hidden">
+    <button id="create-back" class="btn-back">&larr; <span data-i18n="btnBack">Back</span></button>
+
+    <h2 data-i18n="titleCreateAlias">Create Alias</h2>
+
+    <div class="form-group">
+      <label data-i18n="labelName">Name</label>
+      <input id="create-name" type="text" data-i18n-placeholder="placeholderName" placeholder="alias name (* for catch-all)">
+      <small class="hint" data-i18n="hintName">Use * for catch-all, /regex/ for pattern matching</small>
+    </div>
+
+    <div class="form-group">
+      <label data-i18n="labelDomain">Domain</label>
+      <input id="create-domain" type="text" readonly class="readonly">
+    </div>
+
+    <div class="form-group">
+      <label data-i18n="labelRecipients">Recipients (one per line)</label>
+      <textarea id="create-recipients" rows="3"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label data-i18n="labelDescription">Description</label>
+      <input id="create-description" type="text">
+    </div>
+
+    <div class="form-group">
+      <label data-i18n="labelLabels">Labels (comma-separated)</label>
+      <input id="create-labels" type="text">
+    </div>
+
+    <div class="form-group">
+      <label class="toggle-row">
+        <span data-i18n="labelImap">IMAP Storage</span>
+        <label class="toggle"><input id="create-imap" type="checkbox"><span class="toggle-slider"></span></label>
+      </label>
+    </div>
+
+    <button id="btn-create-alias" class="btn btn-primary" data-i18n="btnCreateAlias">Create Alias</button>
+
+    <div id="create-msg" class="msg hidden"></div>
+  </div>
+
+  <!-- ====== Delete confirmation modal ====== -->
+  <div id="modal-delete" class="modal-overlay hidden">
+    <div class="modal">
+      <p data-i18n="confirmDelete">Are you sure you want to delete this alias?</p>
+      <p id="modal-delete-name" class="modal-detail"></p>
+      <div class="button-row">
+        <button id="modal-delete-confirm" class="btn btn-danger" data-i18n="btnDelete">Delete</button>
+        <button id="modal-delete-cancel" class="btn btn-secondary" data-i18n="btnCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== Password result modal ====== -->
+  <div id="modal-password" class="modal-overlay hidden">
+    <div class="modal">
+      <h3 data-i18n="titleGeneratedPassword">Generated Password</h3>
+      <input id="modal-password-value" type="text" readonly class="password-display">
+      <div class="button-row">
+        <button id="modal-password-copy" class="btn btn-primary" data-i18n="btnCopy">Copy</button>
+        <button id="modal-password-close" class="btn btn-secondary" data-i18n="btnClose">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== Global loading overlay ====== -->
+  <div id="global-loading" class="global-loading hidden">
+    <div class="spinner"></div>
+  </div>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
