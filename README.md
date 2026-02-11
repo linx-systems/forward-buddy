@@ -25,13 +25,25 @@ Manage your [ForwardEmail](https://forwardemail.net) aliases directly from Thund
 4. Click **Generate** to create a new token
 5. Copy the token — you'll paste it into the extension settings
 
-## Installation (Development)
+## Installation
 
-1. Open Thunderbird
-2. Go to **Tools** > **Developer Tools** > **Debug Add-ons** (or navigate to `about:debugging`)
-3. Click **Load Temporary Add-on...**
-4. Select the `manifest.json` file from this directory
-5. The extension icon appears in the toolbar
+### Temporary Add-on (Development)
+
+1. Package the extension:
+   ```bash
+   zip -r forwardemail.xpi manifest.json background/ popup/ options/ lib/ icons/ _locales/ -x '*.git*'
+   ```
+2. Open Thunderbird
+3. Go to **Tools** > **Developer Tools** > **Debug Add-ons** (or navigate to `about:debugging`)
+4. Click **Load Temporary Add-on...**
+5. Select the `forwardemail.xpi` file
+6. The extension icon appears in the toolbar
+
+> **Note**: If Thunderbird is installed via Flatpak, you **must** load the `.xpi` file rather than `manifest.json` directly, because the Flatpak sandbox only grants access to the single file selected through the file picker.
+
+### Permanent Installation (when published)
+
+Install from Thunderbird Add-ons (ATN) — not yet published.
 
 ## Setup
 
@@ -75,7 +87,7 @@ Manage your [ForwardEmail](https://forwardemail.net) aliases directly from Thund
 
 ## No Build Step Required
 
-This extension uses plain ES6 modules — no npm, no bundler, no build step. Load it directly into Thunderbird.
+This extension uses plain ES6 modules — no npm, no bundler, no build step.
 
 ## License
 
