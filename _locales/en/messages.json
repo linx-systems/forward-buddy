@@ -1,0 +1,222 @@
+{
+  "extensionName": {
+    "message": "ForwardEmail Alias Manager",
+    "description": "Name of the extension"
+  },
+  "extensionDescription": {
+    "message": "Manage your ForwardEmail aliases directly from Thunderbird",
+    "description": "Description of the extension"
+  },
+  "optionsTitle": {
+    "message": "ForwardEmail Alias Manager — Setup",
+    "description": "Title of the options page"
+  },
+  "setupInstructions": {
+    "message": "How to get your API token",
+    "description": "Collapsible instructions header"
+  },
+  "setupStep1": {
+    "message": "Go to forwardemail.net/my-account/security",
+    "description": "Setup step 1"
+  },
+  "setupStep2": {
+    "message": "Scroll to the \"API Tokens\" section",
+    "description": "Setup step 2"
+  },
+  "setupStep3": {
+    "message": "Click \"Generate\" to create a new API token",
+    "description": "Setup step 3"
+  },
+  "setupStep4": {
+    "message": "Copy the token",
+    "description": "Setup step 4"
+  },
+  "setupStep5": {
+    "message": "Paste it into the field below",
+    "description": "Setup step 5"
+  },
+  "setupStep6": {
+    "message": "Click \"Test Connection\" to verify",
+    "description": "Setup step 6"
+  },
+  "labelApiToken": {
+    "message": "API Token",
+    "description": "Label for API token input"
+  },
+  "placeholderToken": {
+    "message": "Paste your API token here",
+    "description": "Placeholder for API token input"
+  },
+  "btnTestConnection": {
+    "message": "Test Connection",
+    "description": "Button to test API connection"
+  },
+  "btnTesting": {
+    "message": "Testing\u2026",
+    "description": "Button label while testing"
+  },
+  "btnSave": {
+    "message": "Save",
+    "description": "Save button"
+  },
+  "btnSaveChanges": {
+    "message": "Save Changes",
+    "description": "Save changes button"
+  },
+  "testSuccess": {
+    "message": "Connected as",
+    "description": "Prefix for successful connection test"
+  },
+  "connectedAs": {
+    "message": "Connected as",
+    "description": "Status bar connected prefix"
+  },
+  "savedOk": {
+    "message": "Settings saved.",
+    "description": "Success message after saving"
+  },
+  "notConfigured": {
+    "message": "No API token configured.",
+    "description": "Shown when no token is set"
+  },
+  "btnOpenSettings": {
+    "message": "Open Settings",
+    "description": "Button to open settings page"
+  },
+  "btnNewAlias": {
+    "message": "New Alias",
+    "description": "Button to create new alias"
+  },
+  "placeholderSearch": {
+    "message": "Search aliases\u2026",
+    "description": "Search input placeholder"
+  },
+  "noAliases": {
+    "message": "No aliases found.",
+    "description": "Empty state message"
+  },
+  "noDomains": {
+    "message": "No domains found",
+    "description": "Shown when no domains exist"
+  },
+  "btnBack": {
+    "message": "Back",
+    "description": "Back button"
+  },
+  "labelEnabled": {
+    "message": "Enabled",
+    "description": "Toggle label for alias enabled state"
+  },
+  "labelRecipients": {
+    "message": "Recipients (one per line)",
+    "description": "Label for recipients field"
+  },
+  "labelDescription": {
+    "message": "Description",
+    "description": "Label for description field"
+  },
+  "labelLabels": {
+    "message": "Labels (comma-separated)",
+    "description": "Label for labels field"
+  },
+  "labelImap": {
+    "message": "IMAP Storage",
+    "description": "Toggle label for IMAP"
+  },
+  "labelPgp": {
+    "message": "PGP Encryption",
+    "description": "Toggle label for PGP"
+  },
+  "labelRecipientVerification": {
+    "message": "Recipient Verification",
+    "description": "Toggle label for recipient verification"
+  },
+  "labelCreated": {
+    "message": "Created",
+    "description": "Created timestamp label"
+  },
+  "labelUpdated": {
+    "message": "Updated",
+    "description": "Updated timestamp label"
+  },
+  "btnGeneratePassword": {
+    "message": "Generate Password",
+    "description": "Button to generate IMAP/SMTP password"
+  },
+  "btnDelete": {
+    "message": "Delete Alias",
+    "description": "Delete button"
+  },
+  "btnCancel": {
+    "message": "Cancel",
+    "description": "Cancel button"
+  },
+  "confirmDelete": {
+    "message": "Are you sure you want to delete this alias?",
+    "description": "Delete confirmation message"
+  },
+  "titleGeneratedPassword": {
+    "message": "Generated Password",
+    "description": "Title for password modal"
+  },
+  "btnCopy": {
+    "message": "Copy",
+    "description": "Copy button"
+  },
+  "btnClose": {
+    "message": "Close",
+    "description": "Close button"
+  },
+  "titleCreateAlias": {
+    "message": "Create Alias",
+    "description": "Title for create alias view"
+  },
+  "labelName": {
+    "message": "Name",
+    "description": "Label for alias name input"
+  },
+  "labelDomain": {
+    "message": "Domain",
+    "description": "Label for domain display"
+  },
+  "placeholderName": {
+    "message": "alias name (* for catch-all)",
+    "description": "Placeholder for alias name input"
+  },
+  "hintName": {
+    "message": "Use * for catch-all, /regex/ for pattern matching",
+    "description": "Hint text below alias name input"
+  },
+  "btnCreateAlias": {
+    "message": "Create Alias",
+    "description": "Create alias button"
+  },
+  "errorNoToken": {
+    "message": "Please enter an API token.",
+    "description": "Error when token is empty"
+  },
+  "errorInvalidToken": {
+    "message": "Invalid API token. Please check and try again.",
+    "description": "Error for 401 responses"
+  },
+  "errorRateLimited": {
+    "message": "Rate limited. Please wait a moment and try again.",
+    "description": "Error for 429 responses"
+  },
+  "errorNotFound": {
+    "message": "Resource not found.",
+    "description": "Error for 404 responses"
+  },
+  "errorNetwork": {
+    "message": "Network error. Please check your connection.",
+    "description": "Error when offline"
+  },
+  "errorUnknown": {
+    "message": "An unexpected error occurred.",
+    "description": "Generic error fallback"
+  },
+  "errorNameRequired": {
+    "message": "Alias name is required.",
+    "description": "Validation error for empty name"
+  }
+}
