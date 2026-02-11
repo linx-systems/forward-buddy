@@ -1,2 +1,4 @@
 .idea/
 *.xpi
+.tldr*
+.claude
