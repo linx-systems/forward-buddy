@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title data-i18n="optionsTitle">ForwardEmail Alias Manager — Setup</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <h1 data-i18n="optionsTitle">ForwardEmail Alias Manager — Setup</h1>
+
+    <div id="status-bar" class="status-bar hidden">
+      <span id="status-icon"></span>
+      <span id="status-text"></span>
+    </div>
+
+    <details class="instructions">
+      <summary data-i18n="setupInstructions">How to get your API token</summary>
+      <ol>
+        <li data-i18n="setupStep1">Go to <a href="https://forwardemail.net/my-account/security" target="_blank">forwardemail.net/my-account/security</a></li>
+        <li data-i18n="setupStep2">Scroll to the "API Tokens" section</li>
+        <li data-i18n="setupStep3">Click "Generate" to create a new API token</li>
+        <li data-i18n="setupStep4">Copy the token</li>
+        <li data-i18n="setupStep5">Paste it into the field below</li>
+        <li data-i18n="setupStep6">Click "Test Connection" to verify</li>
+      </ol>
+    </details>
+
+    <div class="form-group">
+      <label for="api-token" data-i18n="labelApiToken">API Token</label>
+      <div class="token-input-wrap">
+        <input id="api-token" type="password" autocomplete="off"
+               data-i18n-placeholder="placeholderToken" placeholder="Paste your API token here">
+        <button id="toggle-visibility" type="button" class="btn-icon" title="Show/hide token">
+          <span id="eye-icon">&#x1f441;</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="button-row">
+      <button id="btn-test" class="btn btn-secondary" data-i18n="btnTestConnection">Test Connection</button>
+      <button id="btn-save" class="btn btn-primary" data-i18n="btnSave">Save</button>
+    </div>
+
+    <div id="test-result" class="test-result hidden"></div>
+  </div>
+
+  <script type="module" src="options.js"></script>
+</body>
+</html>
