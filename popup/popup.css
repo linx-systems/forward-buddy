@@ -150,6 +150,7 @@ body {
   transition: background 0.1s;
 }
 .alias-item:hover { background: var(--bg-hover); }
+.alias-item.alias-disabled .alias-info { opacity: 0.5; }
 
 .alias-info { flex: 1; min-width: 0; }
 .alias-name-row {

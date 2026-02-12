@@ -138,16 +138,17 @@ function createAliasItem(alias) {
 
   const item = document.createElement('div');
   item.className = 'alias-item';
+  if (alias.is_enabled === false) item.classList.add('alias-disabled');
 
   // Toggle (stop propagation so click doesn't open detail)
   const toggleWrap = document.createElement('div');
   toggleWrap.className = 'alias-toggle';
+  toggleWrap.addEventListener('click', (e) => e.stopPropagation());
   const toggle = document.createElement('label');
   toggle.className = 'toggle';
   const checkbox = document.createElement('input');
   checkbox.type = 'checkbox';
   checkbox.checked = alias.is_enabled !== false;
-  checkbox.addEventListener('click', (e) => e.stopPropagation());
   checkbox.addEventListener('change', () => toggleAlias(alias, checkbox));
   const slider = document.createElement('span');
   slider.className = 'toggle-slider';
@@ -218,6 +219,7 @@ async function toggleAlias(alias, checkbox) {
     showListError(friendlyError({ message: res.error, status: res.status }));
   } else {
     alias.is_enabled = enabled;
+    checkbox.closest('.alias-item').classList.toggle('alias-disabled', !enabled);
   }
 }
 
