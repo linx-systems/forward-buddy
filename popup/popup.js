@@ -1,4 +1,4 @@
-import { getAliasType, formatEmail, truncateRecipients, formatDate, friendlyError } from '../lib/utils.js';
+import { getAliasType, formatEmail, truncateRecipients, formatDate, friendlyError, splitLines, splitCommas, resolveDomain } from '../lib/utils.js';
 
 /* ====== DOM refs ====== */
 const views = {
@@ -71,10 +71,7 @@ async function loadDomains() {
   }
 
   const domains = res.data;
-  // Clear existing options
-  while (domainSelect.firstChild) {
-    domainSelect.removeChild(domainSelect.firstChild);
-  }
+  domainSelect.replaceChildren();
 
   if (!Array.isArray(domains) || domains.length === 0) {
     const opt = document.createElement('option');
@@ -109,10 +106,7 @@ async function loadAliases() {
   listLoading.classList.remove('hidden');
   listEmpty.classList.add('hidden');
   listError.classList.add('hidden');
-  // Clear alias list safely
-  while (aliasList.firstChild) {
-    aliasList.removeChild(aliasList.firstChild);
-  }
+  aliasList.replaceChildren();
 
   const res = await send({ type: 'getAliases', domain: currentDomain });
 
@@ -128,9 +122,7 @@ async function loadAliases() {
 }
 
 function renderAliases(aliases) {
-  while (aliasList.firstChild) {
-    aliasList.removeChild(aliasList.firstChild);
-  }
+  aliasList.replaceChildren();
   listEmpty.classList.toggle('hidden', aliases.length > 0);
 
   for (const alias of aliases) {
@@ -140,7 +132,7 @@ function renderAliases(aliases) {
 
 function createAliasItem(alias) {
   const name = alias.name || '';
-  const domain = alias.domain?.name || alias.domain || currentDomain;
+  const domain = resolveDomain(alias, currentDomain);
   const typeInfo = getAliasType(name);
   const { visible, extra } = truncateRecipients(alias.recipients);
 
@@ -213,7 +205,7 @@ function createAliasItem(alias) {
 /* ====== Toggle alias enabled ====== */
 async function toggleAlias(alias, checkbox) {
   const enabled = checkbox.checked;
-  const domain = alias.domain?.name || alias.domain || currentDomain;
+  const domain = resolveDomain(alias, currentDomain);
   const res = await send({
     type: 'updateAlias',
     domain,
@@ -233,7 +225,7 @@ async function toggleAlias(alias, checkbox) {
 function openDetail(alias) {
   currentAlias = alias;
   const name = alias.name || '';
-  const domain = alias.domain?.name || alias.domain || currentDomain;
+  const domain = resolveDomain(alias, currentDomain);
   const typeInfo = getAliasType(name);
 
   document.getElementById('detail-email').textContent = formatEmail(name, domain);
@@ -263,19 +255,13 @@ function openDetail(alias) {
 /* ====== Save detail ====== */
 async function saveDetail() {
   if (!currentAlias) return;
-  const domain = currentAlias.domain?.name || currentAlias.domain || currentDomain;
+  const domain = resolveDomain(currentAlias, currentDomain);
 
   const data = {
     is_enabled: document.getElementById('detail-enabled').checked,
-    recipients: document.getElementById('detail-recipients').value
-      .split('\n')
-      .map((s) => s.trim())
-      .filter(Boolean),
+    recipients: splitLines(document.getElementById('detail-recipients').value),
     description: document.getElementById('detail-description').value.trim(),
-    labels: document.getElementById('detail-labels').value
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean),
+    labels: splitCommas(document.getElementById('detail-labels').value),
     has_imap: document.getElementById('detail-imap').checked,
     has_pgp: document.getElementById('detail-pgp').checked,
     has_recipient_verification: document.getElementById('detail-verification').checked,
@@ -297,7 +283,7 @@ async function saveDetail() {
 /* ====== Generate password ====== */
 async function generatePassword() {
   if (!currentAlias) return;
-  const domain = currentAlias.domain?.name || currentAlias.domain || currentDomain;
+  const domain = resolveDomain(currentAlias, currentDomain);
 
   showGlobalLoading(true);
   const res = await send({ type: 'generatePassword', domain, id: currentAlias.id });
@@ -317,14 +303,14 @@ async function generatePassword() {
 function confirmDelete() {
   if (!currentAlias) return;
   const name = currentAlias.name || '';
-  const domain = currentAlias.domain?.name || currentAlias.domain || currentDomain;
+  const domain = resolveDomain(currentAlias, currentDomain);
   document.getElementById('modal-delete-name').textContent = formatEmail(name, domain);
   document.getElementById('modal-delete').classList.remove('hidden');
 }
 
 async function executeDelete() {
   if (!currentAlias) return;
-  const domain = currentAlias.domain?.name || currentAlias.domain || currentDomain;
+  const domain = resolveDomain(currentAlias, currentDomain);
 
   document.getElementById('modal-delete').classList.add('hidden');
   showGlobalLoading(true);
@@ -361,15 +347,9 @@ async function executeCreate() {
 
   const data = {
     name,
-    recipients: document.getElementById('create-recipients').value
-      .split('\n')
-      .map((s) => s.trim())
-      .filter(Boolean),
+    recipients: splitLines(document.getElementById('create-recipients').value),
     description: document.getElementById('create-description').value.trim(),
-    labels: document.getElementById('create-labels').value
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean),
+    labels: splitCommas(document.getElementById('create-labels').value),
     has_imap: document.getElementById('create-imap').checked,
   };
 

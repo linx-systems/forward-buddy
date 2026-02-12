@@ -2,3 +2,4 @@
 *.xpi
 .tldr*
 .claude
+node_modules/

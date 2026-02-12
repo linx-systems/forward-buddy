@@ -5,6 +5,7 @@
 
 import * as api from '../lib/api.js';
 import * as cache from '../lib/cache.js';
+/* global browser */
 
 async function getToken() {
   const { apiToken } = await browser.storage.local.get('apiToken');
@@ -46,14 +47,18 @@ const handlers = {
   async updateAlias({ domain, id, data }) {
     const token = await getToken();
     const result = await api.updateAlias(token, domain, id, data);
-    cache.invalidateAliases(domain);
+    if (!cache.updateCachedAlias(domain, id, result)) {
+      cache.invalidateAliases(domain);
+    }
     return result;
   },
 
   async deleteAlias({ domain, id }) {
     const token = await getToken();
     await api.deleteAlias(token, domain, id);
-    cache.invalidateAliases(domain);
+    if (!cache.removeCachedAlias(domain, id)) {
+      cache.invalidateAliases(domain);
+    }
     return { ok: true };
   },
 
