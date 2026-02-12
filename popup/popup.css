@@ -224,6 +224,8 @@ body {
 }
 .toggle input:checked + .toggle-slider { background: var(--primary); }
 .toggle input:checked + .toggle-slider::before { transform: translateX(16px); }
+.toggle-disabled { opacity: 0.4; cursor: not-allowed; }
+.toggle-disabled .toggle-slider { cursor: not-allowed; }
 
 .alias-toggle {
   padding-top: 2px;

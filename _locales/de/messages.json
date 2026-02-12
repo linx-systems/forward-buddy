@@ -218,5 +218,9 @@
   "errorNameRequired": {
     "message": "Alias-Name ist erforderlich.",
     "description": "Validation error for empty name"
+  },
+  "toggleDisabledHint": {
+    "message": "Dieser Alias-Typ kann nicht umgeschaltet werden",
+    "description": "Tooltip shown on disabled toggle for catch-all and regex aliases"
   }
 }

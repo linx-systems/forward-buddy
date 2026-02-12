@@ -149,7 +149,13 @@ function createAliasItem(alias) {
   const checkbox = document.createElement('input');
   checkbox.type = 'checkbox';
   checkbox.checked = alias.is_enabled !== false;
-  checkbox.addEventListener('change', () => toggleAlias(alias, checkbox));
+  if (!typeInfo.canDisable) {
+    checkbox.disabled = true;
+    toggle.classList.add('toggle-disabled');
+    toggle.title = t('toggleDisabledHint', 'This alias type cannot be toggled');
+  } else {
+    checkbox.addEventListener('change', () => toggleAlias(alias, checkbox));
+  }
   const slider = document.createElement('span');
   slider.className = 'toggle-slider';
   toggle.appendChild(checkbox);
