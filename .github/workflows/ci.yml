@@ -24,6 +24,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Type check
+        run: npx tsc --noEmit
+
       - name: Lint
         run: npm run lint
 
@@ -38,8 +41,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npx tsc
+
       - name: Build XPI
-        run: zip -r forwardemail.xpi manifest.json background/ popup/ options/ lib/ icons/ _locales/ -x '*.git*'
+        run: zip -r forwardemail.xpi manifest.json background/*.js popup/ options/ lib/*.js icons/ _locales/ -x '*.git*' -x '*.ts' -x '*.map'
 
       - name: Upload XPI artifact
         uses: actions/upload-artifact@v4

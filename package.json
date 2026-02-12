@@ -5,13 +5,21 @@
   "description": "Thunderbird MailExtension for managing ForwardEmail aliases",
   "type": "module",
   "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "pretest": "tsc -p tsconfig.test.json",
     "test": "node --test test/*.test.js",
-    "lint": "eslint lib/ background/ popup/popup.js options/options.js",
-    "lint:fix": "eslint --fix lib/ background/ popup/popup.js options/options.js",
-    "package": "zip -r forwardemail.xpi manifest.json background/ popup/ options/ lib/ icons/ _locales/ -x '*.git*'"
+    "lint": "eslint 'lib/**/*.ts' 'background/**/*.ts' 'popup/**/*.ts' 'options/**/*.ts'",
+    "lint:fix": "eslint --fix 'lib/**/*.ts' 'background/**/*.ts' 'popup/**/*.ts' 'options/**/*.ts'",
+    "package": "tsc && zip -r forwardemail.xpi manifest.json background/*.js popup/ options/ lib/*.js icons/ _locales/ -x '*.git*' -x '*.ts' -x '*.map'"
   },
   "devDependencies": {
+    "@types/node": "^25.2.3",
+    "@typescript-eslint/eslint-plugin": "^8.55.0",
+    "@typescript-eslint/parser": "^8.55.0",
     "eslint": "^9.0.0",
-    "globals": "^15.0.0"
+    "globals": "^15.0.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.55.0"
   }
 }

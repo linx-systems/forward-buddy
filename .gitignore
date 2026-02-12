@@ -3,3 +3,15 @@
 .tldr*
 .claude
 node_modules/
+
+# Compiled TypeScript output (in-place compilation)
+lib/*.js
+lib/*.js.map
+background/*.js
+background/*.js.map
+popup/popup.js
+popup/popup.js.map
+options/options.js
+options/options.js.map
+test/*.js
+test/*.js.map
