@@ -1,0 +1,17 @@
+{
+  "name": "forward-buddy",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Thunderbird MailExtension for managing ForwardEmail aliases",
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "lint": "eslint lib/ background/ popup/popup.js options/options.js",
+    "lint:fix": "eslint --fix lib/ background/ popup/popup.js options/options.js",
+    "package": "zip -r forwardemail.xpi manifest.json background/ popup/ options/ lib/ icons/ _locales/ -x '*.git*'"
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "globals": "^15.0.0"
+  }
+}
