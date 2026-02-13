@@ -56,6 +56,26 @@ globalThis.browser = {
         },
         openOptionsPage() { },
     },
+    messageDisplay: {
+        _listeners: [],
+        onMessagesDisplayed: {
+            addListener(fn) {
+                globalThis.browser.messageDisplay._listeners.push(fn);
+            },
+        },
+        async getDisplayedMessages() {
+            return [];
+        },
+    },
+    messageDisplayAction: {
+        async setBadgeText() { },
+        async setBadgeBackgroundColor() { },
+        async setTitle() { },
+    },
+    tabs: {
+        async getCurrent() { return { id: 1, windowId: 1, active: true }; },
+        async query() { return [{ id: 1, windowId: 1, active: true }]; },
+    },
 };
 /** Mock navigator.onLine (default: online) */
 if (typeof globalThis.navigator === 'undefined') {

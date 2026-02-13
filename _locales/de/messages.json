@@ -222,5 +222,21 @@
   "toggleDisabledHint": {
     "message": "Dieser Alias-Typ kann nicht umgeschaltet werden",
     "description": "Tooltip shown on disabled toggle for catch-all and regex aliases"
+  },
+  "msgDisplayTitle": {
+    "message": "Alias-Pr\u00fcfung",
+    "description": "Title of the message display popup"
+  },
+  "msgDisplayNoMatch": {
+    "message": "Kein Alias-Treffer f\u00fcr diese Nachricht.",
+    "description": "Shown when no aliases match the message recipients"
+  },
+  "msgDisplayRecipients": {
+    "message": "Weiterleitung an",
+    "description": "Label before the list of forwarding recipients"
+  },
+  "msgDisplayLoading": {
+    "message": "Aliase werden gepr\u00fcft\u2026",
+    "description": "Shown while checking for alias matches"
   }
 }

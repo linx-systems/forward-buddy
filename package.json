@@ -11,7 +11,7 @@
     "test": "node --test test/*.test.js",
     "lint": "eslint 'lib/**/*.ts' 'background/**/*.ts' 'popup/**/*.ts' 'options/**/*.ts'",
     "lint:fix": "eslint --fix 'lib/**/*.ts' 'background/**/*.ts' 'popup/**/*.ts' 'options/**/*.ts'",
-    "package": "tsc && zip -r forwardemail.xpi manifest.json background/*.js popup/ options/ lib/*.js icons/ _locales/ -x '*.git*' -x '*.ts' -x '*.map'"
+    "package": "tsc && zip -r forwardemail.xpi manifest.json background/*.js popup/ options/ messageDisplay/ lib/*.js icons/ _locales/ -x '*.git*' -x '*.ts' -x '*.map'"
   },
   "devDependencies": {
     "@types/node": "^25.2.3",

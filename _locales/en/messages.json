@@ -222,5 +222,21 @@
   "toggleDisabledHint": {
     "message": "This alias type cannot be toggled",
     "description": "Tooltip shown on disabled toggle for catch-all and regex aliases"
+  },
+  "msgDisplayTitle": {
+    "message": "Alias Check",
+    "description": "Title of the message display popup"
+  },
+  "msgDisplayNoMatch": {
+    "message": "No alias match found for this message.",
+    "description": "Shown when no aliases match the message recipients"
+  },
+  "msgDisplayRecipients": {
+    "message": "Forwards to",
+    "description": "Label before the list of forwarding recipients"
+  },
+  "msgDisplayLoading": {
+    "message": "Checking aliases\u2026",
+    "description": "Shown while checking for alias matches"
   }
 }

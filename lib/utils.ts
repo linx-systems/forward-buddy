@@ -2,7 +2,7 @@
  * Utility helpers: alias type detection, formatting.
  */
 
-import type { AliasTypeInfo, TruncateResult } from '../types/forward-email.js';
+import type { Alias, AliasTypeInfo, TruncateResult } from '../types/forward-email.js';
 
 /**
  * Detect alias type from the name field.
@@ -89,4 +89,36 @@ export function resolveDomain(alias: { domain?: string | { name: string } } | nu
   if (typeof domain === 'object' && domain !== null) return domain.name;
   if (typeof domain === 'string') return domain;
   return fallback || '';
+}
+
+/**
+ * Parse an email address string into local part and domain.
+ * Handles formats: "user@domain", "<user@domain>", "Display Name <user@domain>"
+ */
+export function parseEmailAddress(email: string): { local: string; domain: string } | null {
+  const match = email.match(/<([^@]+)@([^>]+)>/);
+  if (match) return { local: match[1].toLowerCase(), domain: match[2].toLowerCase() };
+  const simple = email.match(/^([^@\s]+)@([^\s]+)$/);
+  if (simple) return { local: simple[1].toLowerCase(), domain: simple[2].toLowerCase() };
+  return null;
+}
+
+/**
+ * Check if an email's local part matches an alias on the same domain.
+ * Handles direct, catch-all, and regex alias types.
+ */
+export function matchesAlias(localPart: string, domain: string, alias: Alias): boolean {
+  const aliasDomain = resolveDomain(alias);
+  if (aliasDomain.toLowerCase() !== domain.toLowerCase()) return false;
+  if (alias.name === '*') return true;
+  const regexMatch = alias.name.match(/^\/(.+)\/(i?)$/);
+  if (regexMatch) {
+    try {
+      const re = new RegExp(regexMatch[1], regexMatch[2] || undefined);
+      return re.test(localPart);
+    } catch {
+      return false;
+    }
+  }
+  return alias.name.toLowerCase() === localPart.toLowerCase();
 }

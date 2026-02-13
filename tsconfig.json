@@ -18,6 +18,7 @@
     "background/**/*.ts",
     "popup/**/*.ts",
     "options/**/*.ts",
+    "messageDisplay/**/*.ts",
     "types/**/*.ts"
   ],
   "exclude": [

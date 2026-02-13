@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Alias Check</title>
+  <link rel="stylesheet" href="messageDisplay.css">
+</head>
+<body>
+  <div id="view-loading" class="view">
+    <div class="loading">
+      <div class="spinner"></div>
+    </div>
+    <p class="loading-text" data-i18n="msgDisplayLoading">Checking aliases...</p>
+  </div>
+
+  <div id="view-results" class="view hidden">
+    <h2 class="panel-title" data-i18n="msgDisplayTitle">Alias Check</h2>
+    <div id="match-list"></div>
+  </div>
+
+  <div id="view-no-match" class="view hidden">
+    <h2 class="panel-title" data-i18n="msgDisplayTitle">Alias Check</h2>
+    <p class="no-match" data-i18n="msgDisplayNoMatch">No alias match found for this message.</p>
+  </div>
+
+  <div id="view-error" class="view hidden">
+    <h2 class="panel-title" data-i18n="msgDisplayTitle">Alias Check</h2>
+    <p id="error-text" class="error-text"></p>
+  </div>
+
+  <script type="module" src="messageDisplay.js"></script>
+</body>
+</html>
