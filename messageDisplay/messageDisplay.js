@@ -1,7 +1,7 @@
 /**
  * Message display popup — shows alias match info for the currently displayed message.
  */
-import { getAliasType, truncateRecipients } from '../lib/utils.js';
+import { getAliasType, truncateRecipients, parseEmailAddress, resolveDomain } from '../lib/utils.js';
 const viewLoading = document.getElementById('view-loading');
 const viewResults = document.getElementById('view-results');
 const viewNoMatch = document.getElementById('view-no-match');
@@ -22,6 +22,100 @@ function applyI18n() {
             el.textContent = browser.i18n.getMessage(key);
     });
 }
+function send(msg) {
+    return browser.runtime.sendMessage(msg);
+}
+function t(key, fallback) {
+    return browser.i18n.getMessage(key) || fallback || key;
+}
+function setButtonLoading(btn, loading) {
+    btn.disabled = loading;
+    if (loading) {
+        btn.dataset.origText = btn.textContent || '';
+        btn.textContent = '';
+        const spinner = document.createElement('span');
+        spinner.className = 'action-spinner';
+        btn.appendChild(spinner);
+    }
+    else {
+        btn.textContent = btn.dataset.origText || '';
+    }
+}
+function replaceActionsWithResult(actionsRow, text, isError) {
+    actionsRow.textContent = '';
+    if (isError) {
+        actionsRow.className = 'match-actions';
+        const errorEl = document.createElement('span');
+        errorEl.className = 'action-error';
+        errorEl.textContent = text;
+        actionsRow.appendChild(errorEl);
+    }
+    else {
+        actionsRow.className = 'action-success';
+        actionsRow.textContent = '\u2713 ' + text;
+    }
+}
+async function handleBlockDirect(alias, domain, actionsRow, btn) {
+    setButtonLoading(btn, true);
+    const res = await send({ type: 'updateAlias', domain, id: alias.id, data: { is_enabled: false } });
+    if (res.error) {
+        setButtonLoading(btn, false);
+        const errorEl = document.createElement('span');
+        errorEl.className = 'action-error';
+        errorEl.textContent = t('msgDisplayBlockError') + ': ' + res.error;
+        actionsRow.appendChild(errorEl);
+    }
+    else {
+        replaceActionsWithResult(actionsRow, t('msgDisplayBlocked'), false);
+    }
+}
+async function handleBlockAddress(address, alias, domain, actionsRow, btn) {
+    const parsed = parseEmailAddress(address);
+    if (!parsed)
+        return;
+    setButtonLoading(btn, true);
+    const res = await send({
+        type: 'createAlias',
+        domain,
+        data: {
+            name: parsed.local,
+            is_enabled: false,
+            recipients: alias.recipients || [],
+        },
+    });
+    if (res.error) {
+        setButtonLoading(btn, false);
+        const errorEl = document.createElement('span');
+        errorEl.className = 'action-error';
+        errorEl.textContent = t('msgDisplayBlockError') + ': ' + res.error;
+        actionsRow.appendChild(errorEl);
+    }
+    else {
+        replaceActionsWithResult(actionsRow, t('msgDisplayBlockCreated'), false);
+    }
+}
+async function handleBlockWildcard(alias, domain, actionsRow, btn) {
+    setButtonLoading(btn, true);
+    const res = await send({ type: 'updateAlias', domain, id: alias.id, data: { is_enabled: false } });
+    if (res.error) {
+        setButtonLoading(btn, false);
+        const errorEl = document.createElement('span');
+        errorEl.className = 'action-error';
+        errorEl.textContent = t('msgDisplayBlockError') + ': ' + res.error;
+        actionsRow.appendChild(errorEl);
+    }
+    else {
+        replaceActionsWithResult(actionsRow, t('msgDisplayBlocked'), false);
+    }
+}
+function openEditPopup(alias, domain) {
+    browser.windows.create({
+        url: browser.runtime.getURL(`popup/popup.html?editAlias=${alias.id}&domain=${encodeURIComponent(domain)}`),
+        type: 'popup',
+        width: 420,
+        height: 580,
+    });
+}
 function renderMatches(matches) {
     matchList.textContent = '';
     for (const m of matches) {
@@ -39,10 +133,10 @@ function renderMatches(matches) {
         badge.style.background = typeInfo.color;
         badge.textContent = typeInfo.label;
         meta.appendChild(badge);
-        const domain = document.createElement('span');
-        domain.className = 'match-domain';
-        domain.textContent = m.domain;
-        meta.appendChild(domain);
+        const domainSpan = document.createElement('span');
+        domainSpan.className = 'match-domain';
+        domainSpan.textContent = m.domain;
+        meta.appendChild(domainSpan);
         item.appendChild(meta);
         if (m.alias.recipients && m.alias.recipients.length > 0) {
             const recip = document.createElement('div');
@@ -56,6 +150,40 @@ function renderMatches(matches) {
             recip.appendChild(text);
             item.appendChild(recip);
         }
+        // Action buttons
+        const domain = resolveDomain(m.alias, m.domain);
+        const actions = document.createElement('div');
+        actions.className = 'match-actions';
+        if (typeInfo.type === 'direct') {
+            const blockBtn = document.createElement('button');
+            blockBtn.className = 'action-btn action-btn-danger';
+            blockBtn.textContent = t('msgDisplayBlock');
+            blockBtn.addEventListener('click', () => handleBlockDirect(m.alias, domain, actions, blockBtn));
+            actions.appendChild(blockBtn);
+        }
+        else {
+            // catch-all or regex: two block options
+            const blockAddrBtn = document.createElement('button');
+            blockAddrBtn.className = 'action-btn action-btn-danger';
+            blockAddrBtn.textContent = t('msgDisplayBlockAddress');
+            blockAddrBtn.addEventListener('click', () => handleBlockAddress(m.address, m.alias, domain, actions, blockAddrBtn));
+            actions.appendChild(blockAddrBtn);
+            const blockAllBtn = document.createElement('button');
+            blockAllBtn.className = 'action-btn action-btn-danger';
+            blockAllBtn.textContent = typeInfo.type === 'catchall' ? t('msgDisplayBlockCatchall') : t('msgDisplayBlockRegex');
+            blockAllBtn.addEventListener('click', () => handleBlockWildcard(m.alias, domain, actions, blockAllBtn));
+            actions.appendChild(blockAllBtn);
+            const warning = document.createElement('div');
+            warning.className = 'block-warning';
+            warning.textContent = t('msgDisplayBlockWarning');
+            actions.appendChild(warning);
+        }
+        const editBtn = document.createElement('button');
+        editBtn.className = 'action-btn action-btn-secondary';
+        editBtn.textContent = t('msgDisplayEdit');
+        editBtn.addEventListener('click', () => openEditPopup(m.alias, domain));
+        actions.appendChild(editBtn);
+        item.appendChild(actions);
         matchList.appendChild(item);
     }
 }

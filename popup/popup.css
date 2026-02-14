@@ -379,3 +379,26 @@ body {
   background: var(--bg-secondary);
   color: var(--fg);
 }
+
+/* ====== Edit mode (standalone window from message display) ====== */
+body.edit-mode {
+  width: auto;
+  max-height: none;
+}
+
+body.edit-mode .header {
+  display: none;
+}
+
+body.edit-mode #view-list {
+  display: none !important;
+}
+
+body.edit-mode #detail-back {
+  font-size: 13px;
+  color: var(--fg-muted);
+}
+
+body.edit-mode #detail-back:hover {
+  color: var(--fg);
+}

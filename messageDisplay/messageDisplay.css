@@ -131,3 +131,90 @@ body {
   border-radius: var(--radius);
   font-size: 12px;
 }
+
+/* Action buttons */
+.match-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  background: var(--bg);
+  color: var(--fg);
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.action-btn:hover {
+  background: var(--bg-hover);
+}
+
+.action-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.action-btn-danger {
+  color: var(--error);
+  border-color: var(--error);
+}
+
+.action-btn-danger:hover {
+  background: var(--error-bg);
+}
+
+.action-btn-secondary {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.action-btn-secondary:hover {
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+}
+
+.action-spinner {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--border);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+.action-success {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--success);
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.action-error {
+  font-size: 11px;
+  color: var(--error);
+  margin-top: 4px;
+}
+
+.block-warning {
+  font-size: 10px;
+  color: var(--fg-muted);
+  margin-top: 2px;
+  width: 100%;
+}

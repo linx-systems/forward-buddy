@@ -238,5 +238,45 @@
   "msgDisplayLoading": {
     "message": "Aliase werden gepr\u00fcft\u2026",
     "description": "Shown while checking for alias matches"
+  },
+  "btnCloseWindow": {
+    "message": "Schlie\u00dfen",
+    "description": "Button to close the standalone edit window"
+  },
+  "msgDisplayBlock": {
+    "message": "Blockieren",
+    "description": "Button to block/disable a direct alias"
+  },
+  "msgDisplayBlockAddress": {
+    "message": "Diese Adresse blockieren",
+    "description": "Button to create a dedicated disabled alias for a specific address matched by catch-all/regex"
+  },
+  "msgDisplayBlockCatchall": {
+    "message": "Catch-all blockieren",
+    "description": "Button to disable the entire catch-all alias"
+  },
+  "msgDisplayBlockRegex": {
+    "message": "Regex blockieren",
+    "description": "Button to disable the entire regex alias"
+  },
+  "msgDisplayBlockWarning": {
+    "message": "Dies blockiert ALLE E-Mails \u00fcber diesen Alias",
+    "description": "Warning shown when blocking a catch-all or regex alias entirely"
+  },
+  "msgDisplayEdit": {
+    "message": "Bearbeiten",
+    "description": "Button to open alias in the main popup for editing"
+  },
+  "msgDisplayBlocked": {
+    "message": "Blockiert",
+    "description": "Success indicator after blocking an alias"
+  },
+  "msgDisplayBlockCreated": {
+    "message": "Block-Alias erstellt",
+    "description": "Success indicator after creating a dedicated block alias"
+  },
+  "msgDisplayBlockError": {
+    "message": "Blockieren fehlgeschlagen",
+    "description": "Error message when blocking fails"
   }
 }

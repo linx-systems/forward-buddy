@@ -52,6 +52,21 @@ async function init() {
     }
     showView('list');
     await loadDomains();
+    // Handle deep-link from message display "Edit" button
+    const params = new URLSearchParams(window.location.search);
+    const editAliasId = params.get('editAlias');
+    const editDomain = params.get('domain');
+    if (editAliasId && editDomain) {
+        document.body.classList.add('edit-mode');
+        const backBtn = document.getElementById('detail-back');
+        backBtn.textContent = '\u2715 ' + t('btnCloseWindow', 'Close');
+        currentDomain = editDomain;
+        domainSelect.value = editDomain;
+        await loadAliases();
+        const alias = allAliases.find((a) => a.id === editAliasId);
+        if (alias)
+            openDetail(alias);
+    }
 }
 /* ====== Domains ====== */
 async function loadDomains() {
@@ -375,7 +390,14 @@ domainSelect.addEventListener('change', async () => {
 searchInput.addEventListener('input', filterAliases);
 document.getElementById('btn-new-alias').addEventListener('click', openCreate);
 document.querySelector('.btn-create-from-empty')?.addEventListener('click', openCreate);
-document.getElementById('detail-back').addEventListener('click', () => showView('list'));
+document.getElementById('detail-back').addEventListener('click', () => {
+    if (document.body.classList.contains('edit-mode')) {
+        window.close();
+    }
+    else {
+        showView('list');
+    }
+});
 document.getElementById('btn-save-detail').addEventListener('click', saveDetail);
 document.getElementById('btn-gen-password').addEventListener('click', generatePassword);
 document.getElementById('btn-delete-alias').addEventListener('click', confirmDelete);

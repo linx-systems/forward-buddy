@@ -18,6 +18,16 @@ declare namespace browser {
     };
     function sendMessage(message: any): Promise<any>;
     function openOptionsPage(): void;
+    function getURL(path: string): string;
+  }
+
+  namespace windows {
+    function create(createData: {
+      url?: string;
+      type?: string;
+      width?: number;
+      height?: number;
+    }): Promise<{ id: number }>;
   }
 
   namespace messageDisplay {
