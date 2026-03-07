@@ -4,18 +4,30 @@
 
 import type { Alias, AliasTypeInfo, TruncateResult } from '../types/forward-email.js';
 
+const REGEX_ALIAS_PATTERN = /^\/(.+)\/([ig]{0,2})$/;
+
+function parseAliasRegex(name: string): { source: string; flags: string } | null {
+  const match = name.match(REGEX_ALIAS_PATTERN);
+  if (!match) return null;
+
+  const flags = match[2] || '';
+  if (new Set(flags).size !== flags.length) return null;
+
+  return { source: match[1], flags };
+}
+
 /**
  * Detect alias type from the name field.
  * - "*" -> catch-all
- * - "/pattern/" or "/pattern/i" -> regex
+ * - "/pattern/" or "/pattern/gi" -> regex
  * - everything else -> direct
  */
 export function getAliasType(name: string): AliasTypeInfo {
   if (name === '*') {
-    return { type: 'catchall', label: 'Catch-all \u2731', color: '#f59e0b', canDisable: false };
+    return { type: 'catchall', label: 'Catch-all \u2731', color: '#f59e0b', canDisable: true };
   }
-  if (/^\/.*\/$|^\/.*\/i$/.test(name)) {
-    return { type: 'regex', label: 'Regex', color: '#8b5cf6', canDisable: false };
+  if (parseAliasRegex(name)) {
+    return { type: 'regex', label: 'Regex', color: '#8b5cf6', canDisable: true };
   }
   return { type: 'direct', label: 'Direct', color: '#10b981', canDisable: true };
 }
@@ -107,14 +119,14 @@ export function parseEmailAddress(email: string): { local: string; domain: strin
  * Check if an email's local part matches an alias on the same domain.
  * Handles direct, catch-all, and regex alias types.
  */
-export function matchesAlias(localPart: string, domain: string, alias: Alias): boolean {
-  const aliasDomain = resolveDomain(alias);
+export function matchesAlias(localPart: string, domain: string, alias: Alias, fallbackDomain?: string): boolean {
+  const aliasDomain = resolveDomain(alias, fallbackDomain);
   if (aliasDomain.toLowerCase() !== domain.toLowerCase()) return false;
   if (alias.name === '*') return true;
-  const regexMatch = alias.name.match(/^\/(.+)\/(i?)$/);
+  const regexMatch = parseAliasRegex(alias.name);
   if (regexMatch) {
     try {
-      const re = new RegExp(regexMatch[1], regexMatch[2] || undefined);
+      const re = new RegExp(regexMatch.source, regexMatch.flags || undefined);
       return re.test(localPart);
     } catch {
       return false;

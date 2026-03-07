@@ -28,10 +28,32 @@ interface MockRuntime {
   openOptionsPage(): void;
 }
 
+interface MockMessageDisplay {
+  _listeners: Array<(tab: any, messages: any) => Promise<void> | void>;
+  onMessagesDisplayed: {
+    addListener(fn: (tab: any, messages: any) => Promise<void> | void): void;
+  };
+  getDisplayedMessages(tabId: number): Promise<unknown[]>;
+}
+
+interface MockMessageDisplayAction {
+  setBadgeText(details: Record<string, unknown>): Promise<void>;
+  setBadgeBackgroundColor(details: Record<string, unknown>): Promise<void>;
+  setTitle(details: Record<string, unknown>): Promise<void>;
+}
+
+interface MockTabs {
+  getCurrent(): Promise<{ id: number; windowId: number; active: boolean }>;
+  query(queryInfo: Record<string, unknown>): Promise<Array<{ id: number; windowId: number; active: boolean }>>;
+}
+
 interface MockBrowser {
   i18n: MockI18n;
   storage: { local: MockStorageLocal };
   runtime: MockRuntime;
+  messageDisplay: MockMessageDisplay;
+  messageDisplayAction: MockMessageDisplayAction;
+  tabs: MockTabs;
 }
 
 /** Minimal mock of the Thunderbird `browser` WebExtension API. */
@@ -83,6 +105,30 @@ interface MockBrowser {
       return handler(msg, {}) as Promise<any>;
     },
     openOptionsPage(): void {},
+  },
+  messageDisplay: {
+    _listeners: [] as Array<(tab: any, messages: any) => Promise<void> | void>,
+    onMessagesDisplayed: {
+      addListener(fn: (tab: any, messages: any) => Promise<void> | void): void {
+        (globalThis as any).browser.messageDisplay._listeners.push(fn);
+      },
+    },
+    async getDisplayedMessages(): Promise<unknown[]> {
+      return [];
+    },
+  },
+  messageDisplayAction: {
+    async setBadgeText(): Promise<void> {},
+    async setBadgeBackgroundColor(): Promise<void> {},
+    async setTitle(): Promise<void> {},
+  },
+  tabs: {
+    async getCurrent(): Promise<{ id: number; windowId: number; active: boolean }> {
+      return { id: 1, windowId: 1, active: true };
+    },
+    async query(): Promise<Array<{ id: number; windowId: number; active: boolean }>> {
+      return [{ id: 1, windowId: 1, active: true }];
+    },
   },
 } satisfies MockBrowser;
 

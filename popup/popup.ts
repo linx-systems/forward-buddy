@@ -21,6 +21,7 @@ const listError = document.getElementById('list-error')!;
 let currentDomain: string = '';
 let allAliases: Alias[] = [];
 let currentAlias: Alias | null = null;
+let aliasLoadRequest = 0;
 
 /* ====== i18n ====== */
 function t(key: string, fallback?: string): string {
@@ -119,16 +120,18 @@ async function loadDomains(): Promise<void> {
 /* ====== Aliases ====== */
 async function loadAliases(): Promise<void> {
   if (!currentDomain) return;
+  const requestId = ++aliasLoadRequest;
+  const requestedDomain = currentDomain;
 
   listLoading.classList.remove('hidden');
   listEmpty.classList.add('hidden');
   listError.classList.add('hidden');
   aliasList.replaceChildren();
 
-  const res = await send({ type: 'getAliases', domain: currentDomain });
+  const res = await send({ type: 'getAliases', domain: requestedDomain });
+  if (requestId !== aliasLoadRequest || requestedDomain !== currentDomain) return;
 
   listLoading.classList.add('hidden');
-
   if (res.error) {
     showListError(res.error);
     return;

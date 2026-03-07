@@ -29,17 +29,17 @@ Manage your [ForwardEmail](https://forwardemail.net) aliases directly from Thund
 
 ### Temporary Add-on (Development)
 
-1. Package the extension:
+1. Build the extension:
    ```bash
-   zip -r forwardemail.xpi manifest.json background/ popup/ options/ lib/ icons/ _locales/ -x '*.git*'
+   bun run build
    ```
 2. Open Thunderbird
 3. Go to **Tools** > **Developer Tools** > **Debug Add-ons** (or navigate to `about:debugging`)
 4. Click **Load Temporary Add-on...**
-5. Select the `forwardemail.xpi` file
+5. Select `dist/manifest.json`
 6. The extension icon appears in the toolbar
 
-> **Note**: If Thunderbird is installed via Flatpak, you **must** load the `.xpi` file rather than `manifest.json` directly, because the Flatpak sandbox only grants access to the single file selected through the file picker.
+> **Note**: If Thunderbird is installed via Flatpak, run `bun run package` and load `forwardemail.xpi` instead, because the Flatpak sandbox only grants access to the single file selected through the file picker.
 
 ### Permanent Installation (when published)
 
@@ -64,30 +64,31 @@ Install from Thunderbird Add-ons (ATN) — not yet published.
 ## Project Structure
 
 ```
-├── manifest.json          # Extension manifest (Manifest V3)
+├── manifest.json          # Source manifest copied into dist/
+├── dist/                  # Compiled extension output (generated)
 ├── background/
-│   └── background.js      # Message handler, API + cache orchestration
+│   └── background.ts      # Message handler, API + cache orchestration
 ├── popup/
 │   ├── popup.html         # Main toolbar popup
-│   ├── popup.js           # Popup logic (list, detail, create views)
+│   ├── popup.ts           # Popup logic (list, detail, create views)
 │   └── popup.css          # Popup styles with dark mode
 ├── options/
 │   ├── options.html       # Settings / login page
-│   ├── options.js         # Settings logic
+│   ├── options.ts         # Settings logic
 │   └── options.css        # Settings styles with dark mode
 ├── lib/
-│   ├── api.js             # ForwardEmail REST API client
-│   ├── cache.js           # TTL cache (domains: 5min, aliases: 2min)
-│   └── utils.js           # Alias type detection, formatting helpers
+│   ├── api.ts             # ForwardEmail REST API client
+│   ├── cache.ts           # TTL cache (domains: 5min, aliases: 2min)
+│   └── utils.ts           # Alias type detection, formatting helpers
 ├── icons/                 # Extension icons (16/32/48/64px)
 └── _locales/
     ├── en/messages.json   # English strings
     └── de/messages.json   # German strings
 ```
 
-## No Build Step Required
+## Build Notes
 
-This extension uses plain ES6 modules — no npm, no bundler, no build step.
+This extension is written in TypeScript and compiled into `dist/` with `tsc`. Use `bun run build` for a temporary add-on build, `bun run test` for isolated test output in `.test-dist/`, and `bun run package` to produce the `.xpi`, including the `messageDisplay/` integration.
 
 ## License
 

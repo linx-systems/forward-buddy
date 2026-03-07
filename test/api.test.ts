@@ -24,11 +24,21 @@ afterEach(() => {
   mock.restoreAll();
 });
 
-function mockResponse(status: number, body: unknown, ok?: boolean) {
+function mockResponse(
+  status: number,
+  body: unknown,
+  ok?: boolean,
+  headers?: Record<string, string>,
+) {
   return {
     ok: ok !== undefined ? ok : status >= 200 && status < 300,
     status,
     statusText: status === 200 ? 'OK' : 'Error',
+    headers: {
+      get(name: string): string | null {
+        return headers?.[name] ?? null;
+      },
+    },
     json: async () => body,
   };
 }
@@ -84,7 +94,24 @@ describe('getDomains', () => {
 
     assert.deepEqual(result, domains);
     const [url] = callArgs();
-    assert.ok(url.includes('/domains?page=1&limit=100'));
+    assert.ok(url.includes('/domains?page=1&limit=1000'));
+  });
+
+  it('fetches all pages when pagination headers indicate more results', async () => {
+    const responses = [
+      mockResponse(200, [{ name: 'page-one.example' }], true, { 'X-Page-Count': '2' }),
+      mockResponse(200, [{ name: 'page-two.example' }], true, { 'X-Page-Count': '2' }),
+    ];
+    fetchMock.mock.mockImplementation(async () => responses.shift()!);
+
+    const result = await getDomains(TOKEN);
+
+    assert.deepEqual(result, [{ name: 'page-one.example' }, { name: 'page-two.example' }]);
+    assert.equal(fetchMock.mock.calls.length, 2);
+    const [firstUrl] = callArgs(0);
+    const [secondUrl] = callArgs(1);
+    assert.ok(firstUrl.includes('/domains?page=1&limit=1000'));
+    assert.ok(secondUrl.includes('/domains?page=2&limit=1000'));
   });
 });
 
@@ -98,7 +125,7 @@ describe('getAliases', () => {
 
     assert.deepEqual(result, aliases);
     const [url] = callArgs();
-    assert.ok(url.includes('/domains/example.com/aliases'));
+    assert.ok(url.includes('/domains/example.com/aliases?page=1&limit=1000'));
   });
 
   it('encodes special characters in domain', async () => {

@@ -16,12 +16,13 @@ export class ApiError extends Error {
 }
 
 const BASE_URL = 'https://api.forwardemail.net/v1';
+const LIST_LIMIT = 1000;
 
 function authHeader(token: string): string {
   return 'Basic ' + btoa(token + ':');
 }
 
-async function request(token: string, method: string, path: string, body?: unknown): Promise<any> {
+async function requestResponse(token: string, method: string, path: string, body?: unknown): Promise<Response> {
   const opts: RequestInit = {
     method,
     headers: {
@@ -48,9 +49,39 @@ async function request(token: string, method: string, path: string, body?: unkno
     throw new ApiError(message, res.status);
   }
 
+  return res;
+}
+
+async function request(token: string, method: string, path: string, body?: unknown): Promise<any> {
+  const res = await requestResponse(token, method, path, body);
+
   if (res.status === 204) return null;
 
   return res.json();
+}
+
+async function requestAllPages<T>(token: string, path: string): Promise<T[]> {
+  const items: T[] = [];
+  let page = 1;
+
+  while (true) {
+    const joiner = path.includes('?') ? '&' : '?';
+    const res = await requestResponse(token, 'GET', `${path}${joiner}page=${page}&limit=${LIST_LIMIT}`);
+    const data = await res.json() as T[];
+    items.push(...data);
+
+    const pageCountHeader = res.headers.get('X-Page-Count');
+    if (pageCountHeader) {
+      const pageCount = Number.parseInt(pageCountHeader, 10);
+      if (Number.isFinite(pageCount) && page >= pageCount) break;
+    } else if (data.length < LIST_LIMIT) {
+      break;
+    }
+
+    page += 1;
+  }
+
+  return items;
 }
 
 /**
@@ -63,18 +94,18 @@ export function getAccount(token: string): Promise<Account> {
 
 /**
  * List user's domains.
- * GET /v1/domains?page=1&limit=100
+ * GET /v1/domains?page=1&limit=1000
  */
 export function getDomains(token: string): Promise<Domain[]> {
-  return request(token, 'GET', '/domains?page=1&limit=100');
+  return requestAllPages<Domain>(token, '/domains');
 }
 
 /**
  * List aliases for a domain.
- * GET /v1/domains/:domain/aliases?page=1&limit=100
+ * GET /v1/domains/:domain/aliases?page=1&limit=1000
  */
 export function getAliases(token: string, domain: string): Promise<Alias[]> {
-  return request(token, 'GET', `/domains/${encodeURIComponent(domain)}/aliases?page=1&limit=100`);
+  return requestAllPages<Alias>(token, `/domains/${encodeURIComponent(domain)}/aliases`);
 }
 
 /**

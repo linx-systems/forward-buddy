@@ -5,13 +5,13 @@
   "description": "Thunderbird MailExtension for managing ForwardEmail aliases",
   "type": "module",
   "scripts": {
-    "build": "tsc",
-    "build:watch": "tsc --watch",
+    "build": "tsc -p tsconfig.json && node scripts/sync-static.mjs",
+    "build:watch": "node scripts/sync-static.mjs && tsc -p tsconfig.json --watch",
     "pretest": "tsc -p tsconfig.test.json",
-    "test": "node --test test/*.test.js",
-    "lint": "eslint 'lib/**/*.ts' 'background/**/*.ts' 'popup/**/*.ts' 'options/**/*.ts'",
-    "lint:fix": "eslint --fix 'lib/**/*.ts' 'background/**/*.ts' 'popup/**/*.ts' 'options/**/*.ts'",
-    "package": "tsc && zip -r forwardemail.xpi manifest.json background/*.js popup/ options/ messageDisplay/ lib/*.js icons/ _locales/ -x '*.git*' -x '*.ts' -x '*.map'"
+    "test": "node --test .test-dist/test/*.test.js",
+    "lint": "eslint 'lib/**/*.ts' 'background/**/*.ts' 'popup/**/*.ts' 'options/**/*.ts' 'messageDisplay/**/*.ts'",
+    "lint:fix": "eslint --fix 'lib/**/*.ts' 'background/**/*.ts' 'popup/**/*.ts' 'options/**/*.ts' 'messageDisplay/**/*.ts'",
+    "package": "bun run build && cd dist && zip -rFS ../forwardemail.xpi ."
   },
   "devDependencies": {
     "@types/node": "^25.2.3",

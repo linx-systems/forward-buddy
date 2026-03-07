@@ -1,7 +1,7 @@
 import { describe, it, beforeEach, afterEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import './setup.js';
-import { invalidateAll, setCachedAliases, getCachedAliases } from '../lib/cache.js';
+import { invalidateAll, setCachedAliases, setCachedDomains, getCachedAliases } from '../lib/cache.js';
 
 /**
  * The background script registers a message listener on import.
@@ -20,11 +20,21 @@ afterEach(() => {
   mock.restoreAll();
 });
 
-function mockResponse(status: number, body: unknown, ok?: boolean) {
+function mockResponse(
+  status: number,
+  body: unknown,
+  ok?: boolean,
+  headers?: Record<string, string>,
+) {
   return {
     ok: ok !== undefined ? ok : status >= 200 && status < 300,
     status,
     statusText: 'OK',
+    headers: {
+      get(name: string): string | null {
+        return headers?.[name] ?? null;
+      },
+    },
     json: async () => body,
   };
 }
@@ -34,6 +44,11 @@ await import('../background/background.js');
 
 function send(msg: Record<string, unknown>): Promise<any> {
   return (globalThis as any).browser.runtime.sendMessage(msg);
+}
+
+function getMessageDisplayListener(): (tab: any, messages: any) => Promise<void> {
+  const listeners = (globalThis as any).browser.messageDisplay._listeners;
+  return listeners[listeners.length - 1];
 }
 
 /* ====== testConnection ====== */
@@ -200,6 +215,92 @@ describe('generatePassword handler', () => {
     });
 
     assert.deepEqual(res.data, pwData);
+  });
+});
+
+/* ====== matchAliases ====== */
+describe('matchAliases handler', () => {
+  it('matches aliases even when the alias payload omits domain', async () => {
+    await (globalThis as any).browser.storage.local.set({ apiToken: 'test-token' });
+    setCachedDomains([{ name: 'example.com' } as any]);
+    setCachedAliases('example.com', [{ id: '1', name: 'sales' } as any]);
+
+    const res = await send({
+      type: 'matchAliases',
+      addresses: ['Sales Team <sales@example.com>'],
+    });
+
+    assert.equal(res.error, undefined);
+    assert.equal(res.data.length, 1);
+    assert.equal(res.data[0].alias.id, '1');
+  });
+
+  it('only fetches aliases for domains present in the message', async () => {
+    await (globalThis as any).browser.storage.local.set({ apiToken: 'test-token' });
+    setCachedDomains([{ name: 'example.com' } as any, { name: 'other.com' } as any]);
+
+    fetchMock.mock.mockImplementation(async () => mockResponse(200, [{ id: '1', name: 'sales' }]));
+
+    const res = await send({
+      type: 'matchAliases',
+      addresses: ['Sales <sales@example.com>'],
+    });
+
+    assert.equal(res.error, undefined);
+    assert.equal(fetchMock.mock.calls.length, 1);
+    const [url] = fetchMock.mock.calls[0].arguments as [string];
+    assert.ok(url.includes('/domains/example.com/aliases'));
+  });
+});
+
+/* ====== token changes ====== */
+describe('token changes', () => {
+  it('invalidates cached domains when the configured token changes', async () => {
+    await (globalThis as any).browser.storage.local.set({ apiToken: 'token-a' });
+    const oldDomains = [{ name: 'old.example' }];
+    fetchMock.mock.mockImplementationOnce(async () => mockResponse(200, oldDomains));
+
+    const first = await send({ type: 'getDomains' });
+    assert.deepEqual(first.data, oldDomains);
+
+    await (globalThis as any).browser.storage.local.set({ apiToken: 'token-b' });
+    const freshDomains = [{ name: 'new.example' }];
+    fetchMock.mock.mockImplementationOnce(async () => mockResponse(200, freshDomains));
+
+    const second = await send({ type: 'getDomains' });
+    assert.deepEqual(second.data, freshDomains);
+    assert.equal(fetchMock.mock.calls.length, 2);
+  });
+});
+
+/* ====== badge updates ====== */
+describe('message display badge updates', () => {
+  it('counts BCC matches and deduplicates the same alias', async () => {
+    await (globalThis as any).browser.storage.local.set({ apiToken: 'test-token' });
+    fetchMock.mock.mockImplementationOnce(async () => mockResponse(200, [{ name: 'example.com' }]));
+    await send({ type: 'getDomains' });
+    setCachedAliases('example.com', [{ id: '1', name: '*', domain: 'example.com' } as any]);
+
+    const setBadgeText = mock.fn(async () => {});
+    const setBadgeBackgroundColor = mock.fn(async () => {});
+    const setTitle = mock.fn(async () => {});
+    (globalThis as any).browser.messageDisplayAction.setBadgeText = setBadgeText;
+    (globalThis as any).browser.messageDisplayAction.setBadgeBackgroundColor = setBadgeBackgroundColor;
+    (globalThis as any).browser.messageDisplayAction.setTitle = setTitle;
+
+    const listener = getMessageDisplayListener();
+    await listener(
+      { id: 9, windowId: 1, active: true },
+      [{ bccList: ['sales@example.com', 'info@example.com'] }],
+    );
+
+    assert.equal(setBadgeText.mock.calls.length, 1);
+    const badgeTextCall = setBadgeText.mock.calls[0] as unknown as {
+      arguments: [{ text: string; tabId: number }];
+    };
+    assert.deepEqual(badgeTextCall.arguments[0], { text: '1', tabId: 9 });
+    assert.equal(setBadgeBackgroundColor.mock.calls.length, 1);
+    assert.equal(setTitle.mock.calls.length, 1);
   });
 });
 

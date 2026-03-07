@@ -240,6 +240,7 @@ async function init(): Promise<void> {
     for (const msg of messages) {
       if (msg.recipients) addresses.push(...msg.recipients);
       if (msg.ccList) addresses.push(...msg.ccList);
+      if (msg.bccList) addresses.push(...msg.bccList);
     }
 
     if (addresses.length === 0) {

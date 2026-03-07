@@ -3,6 +3,8 @@
     "target": "ES2022",
     "module": "ES2022",
     "moduleResolution": "bundler",
+    "rootDir": ".",
+    "outDir": "dist",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -24,6 +26,7 @@
   "exclude": [
     "node_modules",
     "dist",
+    ".test-dist",
     "test"
   ]
 }

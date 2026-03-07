@@ -25,9 +25,9 @@ export default [
       'prefer-const': 'error',
     },
   },
-  // UI files (popup, options)
+  // UI files (popup, options, message display)
   {
-    files: ['popup/**/*.ts', 'options/**/*.ts'],
+    files: ['popup/**/*.ts', 'options/**/*.ts', 'messageDisplay/**/*.ts'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',

@@ -10,6 +10,7 @@ import {
   splitLines,
   splitCommas,
   resolveDomain,
+  matchesAlias,
 } from '../lib/utils.js';
 
 /* ====== getAliasType ====== */
@@ -19,6 +20,7 @@ describe('getAliasType', () => {
     assert.equal(result.type, 'catchall');
     assert.ok(result.label.includes('Catch-all'));
     assert.equal(result.color, '#f59e0b');
+    assert.equal(result.canDisable, true);
   });
 
   it('returns regex for "/pattern/"', () => {
@@ -26,10 +28,21 @@ describe('getAliasType', () => {
     assert.equal(result.type, 'regex');
     assert.equal(result.label, 'Regex');
     assert.equal(result.color, '#8b5cf6');
+    assert.equal(result.canDisable, true);
   });
 
   it('returns regex for "/pattern/i"', () => {
     const result = getAliasType('/^test.*/i');
+    assert.equal(result.type, 'regex');
+  });
+
+  it('returns regex for "/pattern/g"', () => {
+    const result = getAliasType('/^test.*/g');
+    assert.equal(result.type, 'regex');
+  });
+
+  it('returns regex for "/pattern/gi"', () => {
+    const result = getAliasType('/^test.*/gi');
     assert.equal(result.type, 'regex');
   });
 
@@ -208,5 +221,18 @@ describe('resolveDomain', () => {
 
   it('returns empty string when no fallback', () => {
     assert.equal(resolveDomain(null as any), '');
+  });
+});
+
+/* ====== matchesAlias ====== */
+describe('matchesAlias', () => {
+  it('matches regex aliases with the g flag', () => {
+    const alias = { id: '1', name: '/^test.*/g', domain: 'example.com' } as any;
+    assert.equal(matchesAlias('test-user', 'example.com', alias), true);
+  });
+
+  it('matches regex aliases with combined gi flags', () => {
+    const alias = { id: '1', name: '/^Test.*/gi', domain: 'example.com' } as any;
+    assert.equal(matchesAlias('test-user', 'example.com', alias), true);
   });
 });
