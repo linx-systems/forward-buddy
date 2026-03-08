@@ -11,7 +11,8 @@
     "test": "node --test .test-dist/test/*.test.js",
     "lint": "eslint 'lib/**/*.ts' 'background/**/*.ts' 'popup/**/*.ts' 'options/**/*.ts' 'messageDisplay/**/*.ts'",
     "lint:fix": "eslint --fix 'lib/**/*.ts' 'background/**/*.ts' 'popup/**/*.ts' 'options/**/*.ts' 'messageDisplay/**/*.ts'",
-    "package": "bun run build && cd dist && zip -rFS ../forwardemail.xpi ."
+    "package": "bun run build && cd dist && zip -rFS ../forwardemail.xpi .",
+    "package:source": "zip -rFS forwardemail-source.zip . -x '.git/*' 'node_modules/*' 'dist/*' '.test-dist/*' '.idea/*' '.claude/*' 'CLAUDE.md' '.tldr/*' '*.xpi' '.gitignore' '.tldrignore' '*.zip' 'bun.lock'"
   },
   "devDependencies": {
     "@types/node": "^25.2.3",

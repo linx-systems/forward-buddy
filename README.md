@@ -80,16 +80,30 @@ Install from Thunderbird Add-ons (ATN) — not yet published.
 │   ├── api.ts             # ForwardEmail REST API client
 │   ├── cache.ts           # TTL cache (domains: 5min, aliases: 2min)
 │   └── utils.ts           # Alias type detection, formatting helpers
-├── icons/                 # Extension icons (16/32/48/64px)
+├── icons/                 # Extension icons (16/32/48/64/128px + source SVG)
 └── _locales/
     ├── en/messages.json   # English strings
     └── de/messages.json   # German strings
 ```
 
-## Build Notes
+## Building
 
-This extension is written in TypeScript and compiled into `dist/` with `tsc`. Use `bun run build` for a temporary add-on build, `bun run test` for isolated test output in `.test-dist/`, and `bun run package` to produce the `.xpi`, including the `messageDisplay/` integration.
+```bash
+bun install              # Install dependencies
+bun run build            # Compile TypeScript into dist/
+bun run build:watch      # Watch mode
+bun run lint             # Lint source files
+bun run test             # Run tests (compiles into .test-dist/)
+bun run package          # Build + create forwardemail.xpi
+bun run package:source   # Create source zip for ATN review
+```
+
+TypeScript is compiled into `dist/` via `tsc`. Static files (HTML, CSS, icons, locales) are synced by `scripts/sync-static.mjs`. The XPI is built from `dist/` only — no source files or dev artifacts are included.
+
+## Privacy
+
+See [PRIVACY.md](PRIVACY.md) for the full privacy policy.
 
 ## License
 
-MIT
+[MIT](LICENSE)
