@@ -12,6 +12,12 @@ Manage your [ForwardEmail](https://forwardemail.net) aliases directly from Thund
 - Dark mode support
 - English and German localization
 
+## Screenshots
+
+| Alias Management | Settings |
+|:---:|:---:|
+| ![Alias management popup](screenshots/management_page.png) | ![Settings page](screenshots/settings_page.png) |
+
 ## Requirements
 
 - Thunderbird **128+** (Manifest V3 MailExtension)
