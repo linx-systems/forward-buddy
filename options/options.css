@@ -183,3 +183,22 @@ h1 {
   background: var(--error-bg);
   color: var(--error);
 }
+
+/* Demo mode */
+hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1.5rem 0;
+}
+.demo-toggle .toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-weight: 500;
+}
+.demo-toggle .hint {
+  margin: 0.25rem 0 0;
+  font-size: 0.8rem;
+  color: var(--fg-muted);
+}

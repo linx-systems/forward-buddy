@@ -55,8 +55,11 @@ function send(msg: Record<string, unknown>): Promise<MessageResponse> {
 async function init(): Promise<void> {
   applyI18n();
 
+  const demoRes = await send({ type: 'getDemoMode' });
+  const isDemoMode = (demoRes.data as { demoMode?: boolean })?.demoMode === true;
+
   const { apiToken } = await browser.storage.local.get('apiToken');
-  if (!apiToken) {
+  if (!apiToken && !isDemoMode) {
     showView('noconfig');
     return;
   }

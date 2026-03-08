@@ -8,7 +8,9 @@ export type MessageType =
   | { type: 'updateAlias'; domain: string; id: string; data: Partial<Alias> }
   | { type: 'deleteAlias'; domain: string; id: string }
   | { type: 'generatePassword'; domain: string; id: string }
-  | { type: 'matchAliases'; addresses: string[] };
+  | { type: 'matchAliases'; addresses: string[] }
+  | { type: 'setDemoMode'; enabled: boolean }
+  | { type: 'getDemoMode' };
 
 export type MessageResponse<T = unknown> =
   | { data: T; error?: never; status?: never }

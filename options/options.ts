@@ -134,4 +134,17 @@ function showStatus(type: 'success' | 'error', message: string): void {
   statusBar.classList.remove('hidden');
 }
 
+/* ---- Demo mode ---- */
+const demoCheckbox = document.getElementById('demo-mode') as HTMLInputElement;
+
+async function loadDemoState(): Promise<void> {
+  const res = await browser.runtime.sendMessage({ type: 'getDemoMode' });
+  demoCheckbox.checked = res.data?.demoMode ?? false;
+}
+
+demoCheckbox.addEventListener('change', async () => {
+  await browser.runtime.sendMessage({ type: 'setDemoMode', enabled: demoCheckbox.checked });
+});
+
 init();
+loadDemoState();
