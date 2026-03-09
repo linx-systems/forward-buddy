@@ -8,7 +8,7 @@ import {
   updateAlias,
   deleteAlias,
   generatePassword,
-} from '../lib/api.js';
+} from '../src/lib/api.js';
 
 const BASE_URL = 'https://api.forwardemail.net/v1';
 const TOKEN = 'test-api-token';

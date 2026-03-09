@@ -1,8 +1,9 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 
-const rootDir = process.cwd();
-const distDir = path.join(rootDir, 'dist');
+const projectDir = process.cwd();
+const rootDir = path.join(projectDir, 'src');
+const distDir = path.join(projectDir, 'dist');
 const managedRoots = [
   'manifest.json',
   'background',

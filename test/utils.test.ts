@@ -11,7 +11,7 @@ import {
   splitCommas,
   resolveDomain,
   matchesAlias,
-} from '../lib/utils.js';
+} from '../src/lib/utils.js';
 
 /* ====== getAliasType ====== */
 describe('getAliasType', () => {

@@ -3,7 +3,7 @@
     "target": "ES2022",
     "module": "ES2022",
     "moduleResolution": "bundler",
-    "rootDir": ".",
+    "rootDir": "src",
     "outDir": "dist",
     "strict": true,
     "esModuleInterop": true,
@@ -16,12 +16,12 @@
     "verbatimModuleSyntax": false
   },
   "include": [
-    "lib/**/*.ts",
-    "background/**/*.ts",
-    "popup/**/*.ts",
-    "options/**/*.ts",
-    "messageDisplay/**/*.ts",
-    "types/**/*.ts"
+    "src/lib/**/*.ts",
+    "src/background/**/*.ts",
+    "src/popup/**/*.ts",
+    "src/options/**/*.ts",
+    "src/messageDisplay/**/*.ts",
+    "src/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",

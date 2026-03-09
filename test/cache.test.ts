@@ -9,7 +9,7 @@ import {
   invalidateAll,
   updateCachedAlias,
   removeCachedAlias,
-} from '../lib/cache.js';
+} from '../src/lib/cache.js';
 
 beforeEach(() => {
   invalidateAll();

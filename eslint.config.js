@@ -4,7 +4,7 @@ import globals from 'globals';
 export default [
   // Source files (lib, background)
   {
-    files: ['lib/**/*.ts', 'background/**/*.ts'],
+    files: ['src/lib/**/*.ts', 'src/background/**/*.ts'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',
@@ -27,7 +27,7 @@ export default [
   },
   // UI files (popup, options, message display)
   {
-    files: ['popup/**/*.ts', 'options/**/*.ts', 'messageDisplay/**/*.ts'],
+    files: ['src/popup/**/*.ts', 'src/options/**/*.ts', 'src/messageDisplay/**/*.ts'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',

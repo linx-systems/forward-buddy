@@ -1,7 +1,7 @@
 import { describe, it, beforeEach, afterEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import './setup.js';
-import { invalidateAll, setCachedAliases, setCachedDomains, getCachedAliases } from '../lib/cache.js';
+import { invalidateAll, setCachedAliases, setCachedDomains, getCachedAliases } from '../src/lib/cache.js';
 
 /**
  * The background script registers a message listener on import.
@@ -40,7 +40,7 @@ function mockResponse(
 }
 
 // Import background script to register its message listener
-await import('../background/background.js');
+await import('../src/background/background.js');
 
 function send(msg: Record<string, unknown>): Promise<any> {
   return (globalThis as any).browser.runtime.sendMessage(msg);
