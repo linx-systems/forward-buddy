@@ -5,65 +5,12 @@
 
 import * as api from '../lib/api.js';
 import * as cache from '../lib/cache.js';
-import { parseEmailAddress, matchesAlias } from '../lib/utils.js';
+import { parseEmailAddress, matchesAlias, aliasPriority } from '../lib/utils.js';
 import type { Alias } from '../types/forward-email.js';
 import type { MessageType } from '../types/messages.js';
+import { DEMO_DOMAINS, DEMO_ALIASES } from '../lib/demo-data.js';
 
 let demoMode = false;
-
-const DEMO_DOMAINS = [
-  { name: 'example.com' },
-  { name: 'johndoe.net' },
-];
-
-const DEMO_ALIASES: Record<string, Alias[]> = {
-  'example.com': [
-    {
-      id: 'demo-1', name: 'hello', is_enabled: true,
-      recipients: ['john@gmail.com'], description: 'Main contact alias',
-      labels: ['personal'], has_imap: true, has_pgp: false,
-      has_recipient_verification: false,
-      created_at: '2025-01-15T10:30:00Z', updated_at: '2025-06-20T14:00:00Z',
-    },
-    {
-      id: 'demo-2', name: 'shop', is_enabled: true,
-      recipients: ['john@gmail.com'], description: 'Online shopping',
-      labels: ['shopping'], has_imap: false, has_pgp: false,
-      has_recipient_verification: false,
-      created_at: '2025-02-10T08:00:00Z', updated_at: '2025-05-12T09:30:00Z',
-    },
-    {
-      id: 'demo-3', name: '*', is_enabled: true,
-      recipients: ['john@gmail.com'], description: 'Catch-all for example.com',
-      labels: [], has_imap: false, has_pgp: false,
-      has_recipient_verification: false,
-      created_at: '2025-01-15T10:30:00Z', updated_at: '2025-01-15T10:30:00Z',
-    },
-    {
-      id: 'demo-4', name: 'news', is_enabled: false,
-      recipients: ['john@gmail.com'], description: 'Newsletter signups (disabled)',
-      labels: ['newsletters'], has_imap: false, has_pgp: false,
-      has_recipient_verification: false,
-      created_at: '2025-03-01T12:00:00Z', updated_at: '2025-07-04T16:45:00Z',
-    },
-    {
-      id: 'demo-5', name: '/^support-.*/', is_enabled: true,
-      recipients: ['john@gmail.com', 'jane@gmail.com'], description: 'Support regex pattern',
-      labels: ['work'], has_imap: true, has_pgp: true,
-      has_recipient_verification: true,
-      created_at: '2025-04-20T11:00:00Z', updated_at: '2025-08-01T10:00:00Z',
-    },
-  ],
-  'johndoe.net': [
-    {
-      id: 'demo-6', name: 'me', is_enabled: true,
-      recipients: ['john@gmail.com'], description: 'Personal blog contact',
-      labels: ['blog'], has_imap: true, has_pgp: false,
-      has_recipient_verification: false,
-      created_at: '2025-05-01T09:00:00Z', updated_at: '2025-05-01T09:00:00Z',
-    },
-  ],
-};
 
 const demoHandlers: Record<string, (msg: any) => Promise<unknown>> = {
   async testConnection() {
@@ -88,7 +35,10 @@ const demoHandlers: Record<string, (msg: any) => Promise<unknown>> = {
     const aliases = DEMO_ALIASES[domain] ?? [];
     const alias = aliases.find((a) => a.id === id);
     if (!alias) throw new Error('Alias not found');
-    Object.assign(alias, data, { updated_at: new Date().toISOString() });
+    const safeData = Object.fromEntries(
+      Object.entries(data).filter(([k]) => !['__proto__', 'constructor', 'prototype'].includes(k)),
+    );
+    Object.assign(alias, safeData, { updated_at: new Date().toISOString() });
     return alias;
   },
   async deleteAlias({ domain, id }: { domain: string; id: string }) {
@@ -154,7 +104,10 @@ const handlers: Record<string, (msg: any) => Promise<unknown>> = {
     const token = await getActiveToken();
     const result = await api.updateAlias(token, domain, id, data);
     if (!cache.updateCachedAlias(domain, id, result)) {
-      cache.invalidateAliases(domain);
+      // Cache expired or alias not found — refetch and cache fresh data
+      // so the next popup open sees the correct state
+      const fresh = await api.getAliases(token, domain);
+      cache.setCachedAliases(domain, fresh);
     }
     return result;
   },
@@ -210,7 +163,8 @@ const handlers: Record<string, (msg: any) => Promise<unknown>> = {
       const aliases = aliasesByDomain.get(parsed.domain);
       if (!aliases) continue;
 
-      for (const alias of aliases) {
+      const sorted = [...aliases].sort((a, b) => aliasPriority(a.name) - aliasPriority(b.name));
+      for (const alias of sorted) {
         if (matchesAlias(parsed.local, parsed.domain, alias, parsed.domain)) {
           matches.push({ address, alias, domain: parsed.domain });
           break;
@@ -223,9 +177,14 @@ const handlers: Record<string, (msg: any) => Promise<unknown>> = {
 };
 
 // Update badge when a message is displayed
+const badgeRequestIds = new Map<number, number>();
+
 browser.messageDisplay.onMessagesDisplayed.addListener(
   async (tab: browser.tabs.Tab, rawMessages: any) => {
     const tabId = tab.id;
+    const requestId = (badgeRequestIds.get(tabId) ?? 0) + 1;
+    badgeRequestIds.set(tabId, requestId);
+
     try {
       const messages: any[] = Array.isArray(rawMessages) ? rawMessages : rawMessages?.messages ?? [];
       const addresses: string[] = [];
@@ -245,6 +204,9 @@ browser.messageDisplay.onMessagesDisplayed.addListener(
         address: string; alias: Alias; domain: string;
       }[];
 
+      // Discard stale result if a newer request arrived for this tab
+      if (badgeRequestIds.get(tabId) !== requestId) return;
+
       if (matches.length > 0) {
         const uniqueMatches = new Map(matches.map((match) => [`${match.domain}:${match.alias.id}`, match]));
         await browser.messageDisplayAction.setBadgeText({
@@ -262,10 +224,10 @@ browser.messageDisplay.onMessagesDisplayed.addListener(
         await browser.messageDisplayAction.setBadgeText({ text: null, tabId });
         await browser.messageDisplayAction.setTitle({ title: null, tabId });
       }
-    } catch {
-      // Silently fail — user may not have configured a token yet
-      await browser.messageDisplayAction.setBadgeText({ text: null, tabId });
-      await browser.messageDisplayAction.setTitle({ title: null, tabId });
+    } catch (err) {
+      console.warn('ForwardEmail: badge update failed', err);
+      await browser.messageDisplayAction.setBadgeText({ text: null, tabId }).catch(() => {});
+      await browser.messageDisplayAction.setTitle({ title: null, tabId }).catch(() => {});
     }
   }
 );
