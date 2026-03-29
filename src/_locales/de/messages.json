@@ -278,5 +278,25 @@
   "msgDisplayBlockError": {
     "message": "Blockieren fehlgeschlagen",
     "description": "Error message when blocking fails"
+  },
+  "msgDisplayUnblock": {
+    "message": "Freigeben",
+    "description": "Button to unblock/enable a disabled direct alias"
+  },
+  "msgDisplayUnblockCatchall": {
+    "message": "Catch-all freigeben",
+    "description": "Button to re-enable a disabled catch-all alias"
+  },
+  "msgDisplayUnblockRegex": {
+    "message": "Regex freigeben",
+    "description": "Button to re-enable a disabled regex alias"
+  },
+  "msgDisplayUnblocked": {
+    "message": "Freigegeben",
+    "description": "Success indicator after unblocking an alias"
+  },
+  "msgDisplayUnblockError": {
+    "message": "Freigeben fehlgeschlagen",
+    "description": "Error message when unblocking fails"
   }
 }

@@ -11,6 +11,9 @@
     }
   },
   "permissions": ["storage", "messagesRead"],
+  "content_security_policy": {
+    "extension_pages": "default-src 'self'; connect-src https://api.forwardemail.net"
+  },
   "action": {
     "default_title": "__MSG_extensionName__",
     "default_popup": "popup/popup.html",

@@ -278,5 +278,25 @@
   "msgDisplayBlockError": {
     "message": "Failed to block",
     "description": "Error message when blocking fails"
+  },
+  "msgDisplayUnblock": {
+    "message": "Unblock",
+    "description": "Button to unblock/enable a disabled direct alias"
+  },
+  "msgDisplayUnblockCatchall": {
+    "message": "Unblock catch-all",
+    "description": "Button to re-enable a disabled catch-all alias"
+  },
+  "msgDisplayUnblockRegex": {
+    "message": "Unblock regex",
+    "description": "Button to re-enable a disabled regex alias"
+  },
+  "msgDisplayUnblocked": {
+    "message": "Unblocked",
+    "description": "Success indicator after unblocking an alias"
+  },
+  "msgDisplayUnblockError": {
+    "message": "Failed to unblock",
+    "description": "Error message when unblocking fails"
   }
 }

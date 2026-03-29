@@ -2,7 +2,7 @@
  * Message display popup — shows alias match info for the currently displayed message.
  */
 
-import { getAliasType, truncateRecipients, parseEmailAddress, resolveDomain } from '../lib/utils.js';
+import { getAliasType, truncateRecipients, formatEmail, parseEmailAddress, resolveDomain } from '../lib/utils.js';
 import type { Alias } from '../types/forward-email.js';
 import type { MessageResponse } from '../types/messages.js';
 
@@ -122,6 +122,20 @@ async function handleBlockWildcard(alias: Alias, domain: string, actionsRow: HTM
   }
 }
 
+async function handleUnblock(alias: Alias, domain: string, actionsRow: HTMLElement, btn: HTMLButtonElement): Promise<void> {
+  setButtonLoading(btn, true);
+  const res = await send({ type: 'updateAlias', domain, id: alias.id, data: { is_enabled: true } });
+  if (res.error) {
+    setButtonLoading(btn, false);
+    const errorEl = document.createElement('span');
+    errorEl.className = 'action-error';
+    errorEl.textContent = t('msgDisplayUnblockError') + ': ' + res.error;
+    actionsRow.appendChild(errorEl);
+  } else {
+    replaceActionsWithResult(actionsRow, t('msgDisplayUnblocked'), false);
+  }
+}
+
 function openEditPopup(alias: Alias, domain: string): void {
   browser.windows.create({
     url: browser.runtime.getURL(`popup/popup.html?editAlias=${alias.id}&domain=${encodeURIComponent(domain)}`),
@@ -159,7 +173,12 @@ function renderMatches(matches: AliasMatch[]): void {
 
     item.appendChild(meta);
 
-    if (m.alias.recipients && m.alias.recipients.length > 0) {
+    const selfAddr = formatEmail(m.alias.name, m.domain).toLowerCase();
+    const extRecipients = (m.alias.recipients || []).filter(
+      (r) => r.toLowerCase() !== selfAddr,
+    );
+
+    if (extRecipients.length > 0) {
       const recip = document.createElement('div');
       recip.className = 'match-recipients';
 
@@ -168,10 +187,21 @@ function renderMatches(matches: AliasMatch[]): void {
       label.textContent = browser.i18n.getMessage('msgDisplayRecipients') + ': ';
       recip.appendChild(label);
 
-      const { visible, extra } = truncateRecipients(m.alias.recipients, 3);
+      const { visible, extra } = truncateRecipients(extRecipients, 3);
       const text = document.createTextNode(visible.join(', ') + (extra > 0 ? ` (+${extra})` : ''));
       recip.appendChild(text);
 
+      item.appendChild(recip);
+    } else if (m.alias.has_imap) {
+      const recip = document.createElement('div');
+      recip.className = 'match-recipients';
+
+      const label = document.createElement('span');
+      label.className = 'match-recipients-label';
+      label.textContent = browser.i18n.getMessage('msgDisplayRecipients') + ': ';
+      recip.appendChild(label);
+
+      recip.appendChild(document.createTextNode(t('labelImap', 'IMAP Storage')));
       item.appendChild(recip);
     }
 
@@ -180,7 +210,18 @@ function renderMatches(matches: AliasMatch[]): void {
     const actions = document.createElement('div');
     actions.className = 'match-actions';
 
-    if (typeInfo.type === 'direct') {
+    if (m.alias.is_enabled === false) {
+      // Alias is already disabled — show unblock button
+      const unblockBtn = document.createElement('button');
+      unblockBtn.className = 'action-btn action-btn-primary';
+      if (typeInfo.type === 'direct') {
+        unblockBtn.textContent = t('msgDisplayUnblock');
+      } else {
+        unblockBtn.textContent = typeInfo.type === 'catchall' ? t('msgDisplayUnblockCatchall') : t('msgDisplayUnblockRegex');
+      }
+      unblockBtn.addEventListener('click', () => handleUnblock(m.alias, domain, actions, unblockBtn));
+      actions.appendChild(unblockBtn);
+    } else if (typeInfo.type === 'direct') {
       const blockBtn = document.createElement('button');
       blockBtn.className = 'action-btn action-btn-danger';
       blockBtn.textContent = t('msgDisplayBlock');

@@ -17,14 +17,20 @@ export class ApiError extends Error {
 
 const BASE_URL = 'https://api.forwardemail.net/v1';
 const LIST_LIMIT = 1000;
+const REQUEST_TIMEOUT_MS = 30_000;
+const MAX_PAGES = 100;
 
 function authHeader(token: string): string {
   return 'Basic ' + btoa(token + ':');
 }
 
 async function requestResponse(token: string, method: string, path: string, body?: unknown): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
   const opts: RequestInit = {
     method,
+    signal: controller.signal,
     headers: {
       'Authorization': authHeader(token),
       'Accept': 'application/json',
@@ -36,7 +42,17 @@ async function requestResponse(token: string, method: string, path: string, body
     opts.body = JSON.stringify(body);
   }
 
-  const res = await fetch(BASE_URL + path, opts);
+  let res: Response;
+  try {
+    res = await fetch(BASE_URL + path, opts);
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new ApiError('Request timed out', 0);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!res.ok) {
     let message: string;
@@ -64,7 +80,7 @@ async function requestAllPages<T>(token: string, path: string): Promise<T[]> {
   const items: T[] = [];
   let page = 1;
 
-  while (true) {
+  while (page <= MAX_PAGES) {
     const joiner = path.includes('?') ? '&' : '?';
     const res = await requestResponse(token, 'GET', `${path}${joiner}page=${page}&limit=${LIST_LIMIT}`);
     const data = await res.json() as T[];

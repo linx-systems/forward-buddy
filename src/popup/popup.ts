@@ -104,9 +104,10 @@ async function loadDomains(): Promise<void> {
 
   for (const d of domains) {
     const name = d.name || d.domain;
+    if (!name) continue;
     const opt = document.createElement('option');
-    opt.value = name!;
-    opt.textContent = name!;
+    opt.value = name;
+    opt.textContent = name;
     domainSelect.appendChild(opt);
   }
 
@@ -157,7 +158,11 @@ function createAliasItem(alias: Alias): HTMLDivElement {
   const name = alias.name || '';
   const domain = resolveDomain(alias, currentDomain);
   const typeInfo = getAliasType(name);
-  const { visible, extra } = truncateRecipients(alias.recipients);
+  const selfAddress = formatEmail(name, domain).toLowerCase();
+  const externalRecipients = (alias.recipients || []).filter(
+    (r) => r.toLowerCase() !== selfAddress,
+  );
+  const { visible, extra } = truncateRecipients(externalRecipients);
 
   const item = document.createElement('div');
   item.className = 'alias-item';
@@ -215,6 +220,11 @@ function createAliasItem(alias: Alias): HTMLDivElement {
     if (extra > 0) text += ` +${extra} more`;
     recip.textContent = '\u2192 ' + text;
     info.appendChild(recip);
+  } else if (alias.has_imap) {
+    const imap = document.createElement('div');
+    imap.className = 'alias-recipients alias-imap';
+    imap.textContent = '\u2192 ' + t('labelImap', 'IMAP Storage');
+    info.appendChild(imap);
   }
 
   if (alias.description) {
@@ -235,20 +245,30 @@ function createAliasItem(alias: Alias): HTMLDivElement {
 /* ====== Toggle alias enabled ====== */
 async function toggleAlias(alias: Alias, checkbox: HTMLInputElement): Promise<void> {
   const enabled = checkbox.checked;
-  const domain = resolveDomain(alias, currentDomain);
-  const res = await send({
-    type: 'updateAlias',
-    domain,
-    id: alias.id,
-    data: { is_enabled: enabled },
-  });
+  // Always use currentDomain to match the cache key used by loadAliases
+  const domain = currentDomain;
 
-  if (res.error) {
-    checkbox.checked = !enabled; // revert
-    showListError(friendlyError({ message: res.error, status: res.status }));
-  } else {
-    alias.is_enabled = enabled;
-    checkbox.closest('.alias-item')!.classList.toggle('alias-disabled', !enabled);
+  checkbox.disabled = true;
+  try {
+    const res = await send({
+      type: 'updateAlias',
+      domain,
+      id: alias.id,
+      data: { is_enabled: enabled },
+    });
+
+    if (res.error) {
+      checkbox.checked = !enabled; // revert
+      showListError(friendlyError({ message: res.error, status: res.status }));
+    } else {
+      alias.is_enabled = enabled;
+      checkbox.checked = enabled;
+      checkbox.closest('.alias-item')!.classList.toggle('alias-disabled', !enabled);
+    }
+  } catch {
+    checkbox.checked = !enabled; // revert on unexpected error
+  } finally {
+    checkbox.disabled = false;
   }
 }
 
@@ -265,7 +285,9 @@ function openDetail(alias: Alias): void {
   badge.style.backgroundColor = typeInfo.color;
 
   (document.getElementById('detail-enabled') as HTMLInputElement).checked = alias.is_enabled !== false;
-  (document.getElementById('detail-recipients') as HTMLTextAreaElement).value = (alias.recipients || []).join('\n');
+  const selfAddr = formatEmail(name, domain).toLowerCase();
+  const detailRecipients = (alias.recipients || []).filter((r) => r.toLowerCase() !== selfAddr);
+  (document.getElementById('detail-recipients') as HTMLTextAreaElement).value = detailRecipients.join('\n');
   (document.getElementById('detail-description') as HTMLTextAreaElement).value = alias.description || '';
   (document.getElementById('detail-labels') as HTMLInputElement).value = (alias.labels || []).join(', ');
   (document.getElementById('detail-imap') as HTMLInputElement).checked = !!alias.has_imap;
@@ -286,7 +308,7 @@ function openDetail(alias: Alias): void {
 /* ====== Save detail ====== */
 async function saveDetail(): Promise<void> {
   if (!currentAlias) return;
-  const domain = resolveDomain(currentAlias, currentDomain);
+  const domain = currentDomain;
 
   const data = {
     is_enabled: (document.getElementById('detail-enabled') as HTMLInputElement).checked,
@@ -306,15 +328,15 @@ async function saveDetail(): Promise<void> {
     showMsg('detail-msg', 'error', friendlyError({ message: res.error, status: res.status }));
   } else {
     showMsg('detail-msg', 'success', t('savedOk', 'Saved.'));
-    // Refresh list in background
-    loadAliases();
+    await loadAliases();
+    filterAliases();
   }
 }
 
 /* ====== Generate password ====== */
 async function generatePassword(): Promise<void> {
   if (!currentAlias) return;
-  const domain = resolveDomain(currentAlias, currentDomain);
+  const domain = currentDomain;
 
   showGlobalLoading(true);
   const res = await send({ type: 'generatePassword', domain, id: currentAlias.id });
@@ -342,7 +364,7 @@ function confirmDelete(): void {
 
 async function executeDelete(): Promise<void> {
   if (!currentAlias) return;
-  const domain = resolveDomain(currentAlias, currentDomain);
+  const domain = currentDomain;
 
   document.getElementById('modal-delete')!.classList.add('hidden');
   showGlobalLoading(true);
@@ -355,13 +377,23 @@ async function executeDelete(): Promise<void> {
   } else {
     showView('list');
     await loadAliases();
+    filterAliases();
   }
 }
 
 /* ====== Create alias ====== */
 function openCreate(): void {
   (document.getElementById('create-name') as HTMLInputElement).value = '';
-  (document.getElementById('create-domain') as HTMLInputElement).value = currentDomain;
+
+  // Populate domain dropdown from the main domain selector
+  const createDomain = document.getElementById('create-domain') as HTMLSelectElement;
+  createDomain.replaceChildren();
+  for (const opt of domainSelect.options) {
+    const clone = opt.cloneNode(true) as HTMLOptionElement;
+    createDomain.appendChild(clone);
+  }
+  createDomain.value = currentDomain;
+
   (document.getElementById('create-recipients') as HTMLTextAreaElement).value = '';
   (document.getElementById('create-description') as HTMLTextAreaElement).value = '';
   (document.getElementById('create-labels') as HTMLInputElement).value = '';
@@ -385,15 +417,23 @@ async function executeCreate(): Promise<void> {
     has_imap: (document.getElementById('create-imap') as HTMLInputElement).checked,
   };
 
+  const createDomain = (document.getElementById('create-domain') as HTMLSelectElement).value;
+
   showGlobalLoading(true);
-  const res = await send({ type: 'createAlias', domain: currentDomain, data });
+  const res = await send({ type: 'createAlias', domain: createDomain, data });
   showGlobalLoading(false);
 
   if (res.error) {
     showMsg('create-msg', 'error', friendlyError({ message: res.error, status: res.status }));
   } else {
+    // Switch to the domain where the alias was created
+    if (createDomain !== currentDomain) {
+      domainSelect.value = createDomain;
+      currentDomain = createDomain;
+    }
     showView('list');
     await loadAliases();
+    filterAliases();
   }
 }
 
@@ -475,10 +515,14 @@ document.getElementById('modal-delete-cancel')!.addEventListener('click', () => 
   document.getElementById('modal-delete')!.classList.add('hidden');
 });
 
-document.getElementById('modal-password-copy')!.addEventListener('click', () => {
+document.getElementById('modal-password-copy')!.addEventListener('click', async () => {
   const input = document.getElementById('modal-password-value') as HTMLInputElement;
   input.select();
-  navigator.clipboard.writeText(input.value);
+  try {
+    await navigator.clipboard.writeText(input.value);
+  } catch {
+    // Fallback: input is already selected so user can Ctrl+C manually
+  }
 });
 document.getElementById('modal-password-close')!.addEventListener('click', () => {
   document.getElementById('modal-password')!.classList.add('hidden');

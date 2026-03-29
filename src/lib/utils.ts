@@ -5,15 +5,19 @@
 import type { Alias, AliasTypeInfo, TruncateResult } from '../types/forward-email.js';
 
 const REGEX_ALIAS_PATTERN = /^\/(.+)\/([ig]{0,2})$/;
+const MAX_REGEX_SOURCE_LENGTH = 200;
 
 function parseAliasRegex(name: string): { source: string; flags: string } | null {
   const match = name.match(REGEX_ALIAS_PATTERN);
   if (!match) return null;
 
+  const source = match[1];
+  if (source.length > MAX_REGEX_SOURCE_LENGTH) return null;
+
   const flags = match[2] || '';
   if (new Set(flags).size !== flags.length) return null;
 
-  return { source: match[1], flags };
+  return { source, flags };
 }
 
 /**
@@ -30,6 +34,16 @@ export function getAliasType(name: string): AliasTypeInfo {
     return { type: 'regex', label: 'Regex', color: '#8b5cf6', canDisable: true };
   }
   return { type: 'direct', label: 'Direct', color: '#10b981', canDisable: true };
+}
+
+/**
+ * Return match priority for an alias: lower = higher priority.
+ * Direct (0) > Regex (1) > Catch-all (2).
+ */
+export function aliasPriority(name: string): number {
+  if (name === '*') return 2;
+  if (parseAliasRegex(name)) return 1;
+  return 0;
 }
 
 /**
@@ -99,7 +113,7 @@ export function splitCommas(str: string | null | undefined): string[] {
 export function resolveDomain(alias: { domain?: string | { name: string } } | null | undefined, fallback?: string): string {
   const domain = alias?.domain;
   if (typeof domain === 'object' && domain !== null) return domain.name;
-  if (typeof domain === 'string') return domain;
+  if (typeof domain === 'string' && domain.includes('.')) return domain;
   return fallback || '';
 }
 
@@ -127,6 +141,8 @@ export function matchesAlias(localPart: string, domain: string, alias: Alias, fa
   if (regexMatch) {
     try {
       const re = new RegExp(regexMatch.source, regexMatch.flags || undefined);
+      // Quick sanity check with empty string to detect catastrophic backtracking patterns
+      re.test('');
       return re.test(localPart);
     } catch {
       return false;
