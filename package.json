@@ -1,5 +1,5 @@
 {
-  "name": "forward-buddy",
+  "name": "forwardmail-buddy",
   "version": "0.1.0",
   "private": true,
   "description": "Thunderbird MailExtension for managing ForwardEmail aliases",
@@ -11,8 +11,8 @@
     "test": "node --test .test-dist/test/*.test.js",
     "lint": "eslint 'src/lib/**/*.ts' 'src/background/**/*.ts' 'src/popup/**/*.ts' 'src/options/**/*.ts' 'src/messageDisplay/**/*.ts'",
     "lint:fix": "eslint --fix 'src/lib/**/*.ts' 'src/background/**/*.ts' 'src/popup/**/*.ts' 'src/options/**/*.ts' 'src/messageDisplay/**/*.ts'",
-    "package": "bun run build && cd dist && zip -rFS ../forwardemail.xpi .",
-    "package:source": "zip -rFS forwardemail-source.zip . -x '.git/*' 'node_modules/*' 'dist/*' '.test-dist/*' '.idea/*' '.claude/*' 'CLAUDE.md' '.tldr/*' '*.xpi' '.gitignore' '.tldrignore' '*.zip' 'bun.lock'"
+    "package": "bun run build && cd dist && zip -rFS ../forwardmailbuddy.xpi .",
+    "package:source": "zip -rFS forwarmailbuddy-source.zip . -x '.git/*' 'node_modules/*' 'dist/*' '.test-dist/*' '.idea/*' '.claude/*' 'CLAUDE.md' '.tldr/*' '*.xpi' '.gitignore' '.tldrignore' '*.zip' 'bun.lock'"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",

@@ -1,10 +1,10 @@
-# Privacy Policy — ForwardEmail Alias Manager
+# Privacy Policy — ForwardMail Buddy
 
 **Last updated:** 2026-03-08
 
 ## Overview
 
-ForwardEmail Alias Manager is a Thunderbird extension that lets you manage your ForwardEmail aliases. This policy explains what data the extension accesses and how it is handled.
+ForwardMail Buddy is a Thunderbird extension that lets you manage your ForwardEmail aliases. This policy explains what data the extension accesses and how it is handled.
 
 ## Data Collected
 

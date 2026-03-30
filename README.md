@@ -1,4 +1,4 @@
-# ForwardEmail Alias Manager — Thunderbird Extension
+# ForwardMail Buddy — Thunderbird Extension
 
 Manage your [ForwardEmail](https://forwardemail.net) aliases directly from Thunderbird.
 
