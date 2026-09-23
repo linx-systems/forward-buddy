@@ -20,7 +20,7 @@ const staticRootRules = new Map([
   ['popup', new Set(['.html', '.css'])],
   ['options', new Set(['.html', '.css'])],
   ['messageDisplay', new Set(['.html', '.css'])],
-  ['icons', null],
+  ['icons', new Set(['.png'])],
   ['_locales', null],
 ]);
 

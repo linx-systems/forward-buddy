@@ -11,6 +11,7 @@ import {
   splitCommas,
   resolveDomain,
   matchesAlias,
+  toDateInputValue,
 } from '../src/lib/utils.js';
 
 /* ====== getAliasType ====== */
@@ -221,6 +222,33 @@ describe('resolveDomain', () => {
 
   it('returns empty string when no fallback', () => {
     assert.equal(resolveDomain(null as any), '');
+  });
+});
+
+/* ====== toDateInputValue ====== */
+describe('toDateInputValue', () => {
+  it('converts ISO timestamp to YYYY-MM-DD', () => {
+    assert.equal(toDateInputValue('2026-04-20T10:30:00Z'), '2026-04-20');
+  });
+
+  it('passes through YYYY-MM-DD as-is', () => {
+    assert.equal(toDateInputValue('2026-04-20'), '2026-04-20');
+  });
+
+  it('returns empty string for empty input', () => {
+    assert.equal(toDateInputValue(''), '');
+  });
+
+  it('returns empty string for null', () => {
+    assert.equal(toDateInputValue(null), '');
+  });
+
+  it('returns empty string for undefined', () => {
+    assert.equal(toDateInputValue(undefined), '');
+  });
+
+  it('returns empty string for invalid date', () => {
+    assert.equal(toDateInputValue('not-a-date'), '');
   });
 });
 

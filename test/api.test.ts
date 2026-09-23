@@ -8,6 +8,12 @@ import {
   updateAlias,
   deleteAlias,
   generatePassword,
+  getSieveScripts,
+  getSieveScript,
+  createSieveScript,
+  updateSieveScript,
+  deleteSieveScript,
+  activateSieveScript,
 } from '../src/lib/api.js';
 
 const BASE_URL = 'https://api.forwardemail.net/v1';
@@ -200,6 +206,98 @@ describe('generatePassword', () => {
     assert.deepEqual(result, pwData);
     const [url, opts] = callArgs();
     assert.ok(url.includes('/aliases/abc123/generate-password'));
+    assert.equal(opts.method, 'POST');
+  });
+});
+
+/* ====== getSieveScripts ====== */
+describe('getSieveScripts', () => {
+  it('fetches sieve scripts for an alias', async () => {
+    const scripts = [{ id: 's1', name: 'test' }];
+    fetchMock.mock.mockImplementation(async () => mockResponse(200, scripts));
+
+    const result = await getSieveScripts(TOKEN, 'example.com', 'alias1');
+
+    assert.deepEqual(result, scripts);
+    const [url] = callArgs();
+    assert.ok(url.includes('/domains/example.com/aliases/alias1/sieve?page=1'));
+  });
+});
+
+/* ====== getSieveScript ====== */
+describe('getSieveScript', () => {
+  it('fetches a single sieve script', async () => {
+    const script = { id: 's1', name: 'test', content: 'keep;' };
+    fetchMock.mock.mockImplementation(async () => mockResponse(200, script));
+
+    const result = await getSieveScript(TOKEN, 'example.com', 'alias1', 's1');
+
+    assert.deepEqual(result, script);
+    const [url, opts] = callArgs();
+    assert.ok(url.includes('/aliases/alias1/sieve/s1'));
+    assert.equal(opts.method, 'GET');
+  });
+});
+
+/* ====== createSieveScript ====== */
+describe('createSieveScript', () => {
+  it('sends POST with script data', async () => {
+    const script = { id: 's1', name: 'new' };
+    fetchMock.mock.mockImplementation(async () => mockResponse(200, script));
+
+    const data = { name: 'new', content: 'keep;' };
+    const result = await createSieveScript(TOKEN, 'example.com', 'alias1', data);
+
+    assert.deepEqual(result, script);
+    const [url, opts] = callArgs();
+    assert.ok(url.includes('/aliases/alias1/sieve'));
+    assert.equal(opts.method, 'POST');
+    assert.deepEqual(JSON.parse(opts.body), data);
+  });
+});
+
+/* ====== updateSieveScript ====== */
+describe('updateSieveScript', () => {
+  it('sends PUT to correct endpoint', async () => {
+    const updated = { id: 's1', name: 'updated' };
+    fetchMock.mock.mockImplementation(async () => mockResponse(200, updated));
+
+    const result = await updateSieveScript(TOKEN, 'example.com', 'alias1', 's1', { name: 'updated' });
+
+    assert.deepEqual(result, updated);
+    const [url, opts] = callArgs();
+    assert.ok(url.includes('/aliases/alias1/sieve/s1'));
+    assert.equal(opts.method, 'PUT');
+  });
+});
+
+/* ====== deleteSieveScript ====== */
+describe('deleteSieveScript', () => {
+  it('sends DELETE to correct endpoint', async () => {
+    fetchMock.mock.mockImplementation(async () => ({
+      ok: true, status: 204, statusText: 'No Content', json: async () => null,
+    }));
+
+    const result = await deleteSieveScript(TOKEN, 'example.com', 'alias1', 's1');
+    assert.equal(result, null);
+
+    const [url, opts] = callArgs();
+    assert.ok(url.includes('/aliases/alias1/sieve/s1'));
+    assert.equal(opts.method, 'DELETE');
+  });
+});
+
+/* ====== activateSieveScript ====== */
+describe('activateSieveScript', () => {
+  it('sends POST to activate endpoint', async () => {
+    const script = { id: 's1', name: 'test', is_active: true };
+    fetchMock.mock.mockImplementation(async () => mockResponse(200, script));
+
+    const result = await activateSieveScript(TOKEN, 'example.com', 'alias1', 's1');
+
+    assert.deepEqual(result, script);
+    const [url, opts] = callArgs();
+    assert.ok(url.includes('/aliases/alias1/sieve/s1/activate'));
     assert.equal(opts.method, 'POST');
   });
 });

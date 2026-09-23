@@ -1,5 +1,7 @@
-import { getAliasType, formatEmail, truncateRecipients, formatDate, friendlyError, splitLines, splitCommas, resolveDomain } from '../lib/utils.js';
-import type { Alias } from '../types/forward-email.js';
+import { getAliasType, formatEmail, truncateRecipients, formatDate, friendlyError, splitLines, splitCommas, resolveDomain, toDateInputValue } from '../lib/utils.js';
+import type { Alias, SieveScript } from '../types/forward-email.js';
+import { buildSieveScript } from '../lib/sieve-builder.js';
+import type { FilterRule, FilterCondition } from '../lib/sieve-builder.js';
 import type { MessageResponse } from '../types/messages.js';
 
 /* ====== DOM refs ====== */
@@ -8,6 +10,8 @@ const views = {
   list: document.getElementById('view-list')!,
   detail: document.getElementById('view-detail')!,
   create: document.getElementById('view-create')!,
+  sieveList: document.getElementById('view-sieve-list')!,
+  sieveEdit: document.getElementById('view-sieve-edit')!,
 };
 
 const domainSelect = document.getElementById('domain-select') as HTMLSelectElement;
@@ -22,6 +26,8 @@ let currentDomain: string = '';
 let allAliases: Alias[] = [];
 let currentAlias: Alias | null = null;
 let aliasLoadRequest = 0;
+let currentSieveScript: SieveScript | null = null;
+let sieveEditMode: 'create' | 'edit' = 'create';
 
 /* ====== i18n ====== */
 function t(key: string, fallback?: string): string {
@@ -294,6 +300,20 @@ function openDetail(alias: Alias): void {
   (document.getElementById('detail-pgp') as HTMLInputElement).checked = !!alias.has_pgp;
   (document.getElementById('detail-verification') as HTMLInputElement).checked = !!alias.has_recipient_verification;
 
+  // Vacation responder fields
+  const vacationEnabled = !!alias.vacation_responder_is_enabled;
+  (document.getElementById('detail-vacation-enabled') as HTMLInputElement).checked = vacationEnabled;
+  (document.getElementById('detail-vacation-start') as HTMLInputElement).value = toDateInputValue(alias.vacation_responder_start_date);
+  (document.getElementById('detail-vacation-end') as HTMLInputElement).value = toDateInputValue(alias.vacation_responder_end_date);
+  (document.getElementById('detail-vacation-subject') as HTMLInputElement).value = alias.vacation_responder_subject || '';
+  (document.getElementById('detail-vacation-message') as HTMLTextAreaElement).value = alias.vacation_responder_message || '';
+  const vacationDetails = document.getElementById('detail-vacation') as HTMLDetailsElement;
+  if (vacationEnabled) {
+    vacationDetails.open = true;
+  } else {
+    vacationDetails.open = false;
+  }
+
   document.getElementById('detail-created')!.textContent = alias.created_at
     ? `${t('labelCreated', 'Created')}: ${formatDate(alias.created_at)}`
     : '';
@@ -310,7 +330,15 @@ async function saveDetail(): Promise<void> {
   if (!currentAlias) return;
   const domain = currentDomain;
 
-  const data = {
+  // Read vacation fields
+  const vacationStart = (document.getElementById('detail-vacation-start') as HTMLInputElement).value;
+  const vacationEnd = (document.getElementById('detail-vacation-end') as HTMLInputElement).value;
+  if (vacationStart && vacationEnd && vacationEnd < vacationStart) {
+    showMsg('detail-msg', 'error', t('errorVacationDateRange', 'End date must be on or after start date.'));
+    return;
+  }
+
+  const data: Record<string, unknown> = {
     is_enabled: (document.getElementById('detail-enabled') as HTMLInputElement).checked,
     recipients: splitLines((document.getElementById('detail-recipients') as HTMLTextAreaElement).value),
     description: (document.getElementById('detail-description') as HTMLTextAreaElement).value.trim(),
@@ -318,6 +346,11 @@ async function saveDetail(): Promise<void> {
     has_imap: (document.getElementById('detail-imap') as HTMLInputElement).checked,
     has_pgp: (document.getElementById('detail-pgp') as HTMLInputElement).checked,
     has_recipient_verification: (document.getElementById('detail-verification') as HTMLInputElement).checked,
+    vacation_responder_is_enabled: (document.getElementById('detail-vacation-enabled') as HTMLInputElement).checked,
+    vacation_responder_start_date: vacationStart || undefined,
+    vacation_responder_end_date: vacationEnd || undefined,
+    vacation_responder_subject: (document.getElementById('detail-vacation-subject') as HTMLInputElement).value.trim() || undefined,
+    vacation_responder_message: (document.getElementById('detail-vacation-message') as HTMLTextAreaElement).value.trim() || undefined,
   };
 
   showGlobalLoading(true);
@@ -475,6 +508,320 @@ function showGlobalLoading(show: boolean): void {
   document.getElementById('global-loading')!.classList.toggle('hidden', !show);
 }
 
+/* ====== Sieve script management ====== */
+async function openSieveList(): Promise<void> {
+  if (!currentAlias) return;
+  const domain = currentDomain;
+  const aliasId = currentAlias.id;
+
+  showView('sieveList');
+  const sieveList = document.getElementById('sieve-list')!;
+  const sieveLoading = document.getElementById('sieve-list-loading')!;
+  const sieveEmpty = document.getElementById('sieve-list-empty')!;
+  const sieveError = document.getElementById('sieve-list-error')!;
+
+  sieveList.replaceChildren();
+  sieveLoading.classList.remove('hidden');
+  sieveEmpty.classList.add('hidden');
+  sieveError.classList.add('hidden');
+
+  const res = await send({ type: 'getSieveScripts', domain, aliasId });
+  sieveLoading.classList.add('hidden');
+
+  if (res.error) {
+    sieveError.textContent = friendlyError({ message: res.error, status: res.status });
+    sieveError.className = 'error-msg error';
+    sieveError.classList.remove('hidden');
+    return;
+  }
+
+  const scripts = Array.isArray(res.data) ? (res.data as SieveScript[]) : [];
+  sieveEmpty.classList.toggle('hidden', scripts.length > 0);
+
+  for (const script of scripts) {
+    sieveList.appendChild(createSieveItem(script));
+  }
+}
+
+function createSieveItem(script: SieveScript): HTMLDivElement {
+  const item = document.createElement('div');
+  item.className = 'sieve-item';
+
+  const info = document.createElement('div');
+  info.className = 'sieve-item-info';
+
+  const nameRow = document.createElement('div');
+  nameRow.className = 'sieve-item-name';
+  const nameSpan = document.createElement('span');
+  nameSpan.textContent = script.name;
+  nameRow.appendChild(nameSpan);
+
+  if (script.is_active) {
+    const badge = document.createElement('span');
+    badge.className = 'sieve-active-badge';
+    badge.textContent = t('sieveActive', 'Active');
+    nameRow.appendChild(badge);
+  }
+
+  info.appendChild(nameRow);
+
+  if (script.description) {
+    const desc = document.createElement('div');
+    desc.className = 'sieve-item-desc';
+    desc.textContent = script.description;
+    info.appendChild(desc);
+  }
+
+  const actions = document.createElement('div');
+  actions.className = 'sieve-item-actions';
+
+  if (!script.is_active) {
+    const activateBtn = document.createElement('button');
+    activateBtn.className = 'btn btn-secondary';
+    activateBtn.textContent = t('btnActivate', 'Activate');
+    activateBtn.addEventListener('click', (e) => { e.stopPropagation(); activateSieve(script); });
+    actions.appendChild(activateBtn);
+  }
+
+  const editBtn = document.createElement('button');
+  editBtn.className = 'btn btn-secondary';
+  editBtn.textContent = t('msgDisplayEdit', 'Edit');
+  editBtn.addEventListener('click', (e) => { e.stopPropagation(); openSieveEditor(script); });
+  actions.appendChild(editBtn);
+
+  const deleteBtn = document.createElement('button');
+  deleteBtn.className = 'btn btn-danger';
+  deleteBtn.style.width = 'auto';
+  deleteBtn.style.marginTop = '0';
+  deleteBtn.textContent = t('btnDelete', 'Delete');
+  deleteBtn.addEventListener('click', (e) => { e.stopPropagation(); confirmDeleteSieve(script); });
+  actions.appendChild(deleteBtn);
+
+  item.appendChild(info);
+  item.appendChild(actions);
+
+  return item;
+}
+
+function openSieveEditor(script?: SieveScript): void {
+  if (script) {
+    sieveEditMode = 'edit';
+    currentSieveScript = script;
+    document.getElementById('sieve-edit-title')!.textContent = t('titleEditScript', 'Edit Script');
+    (document.getElementById('sieve-name') as HTMLInputElement).value = script.name;
+    (document.getElementById('sieve-description') as HTMLInputElement).value = script.description || '';
+    (document.getElementById('sieve-content') as HTMLTextAreaElement).value = script.content;
+    switchSieveMode('raw');
+  } else {
+    sieveEditMode = 'create';
+    currentSieveScript = null;
+    document.getElementById('sieve-edit-title')!.textContent = t('titleCreateScript', 'New Script');
+    (document.getElementById('sieve-name') as HTMLInputElement).value = '';
+    (document.getElementById('sieve-description') as HTMLInputElement).value = '';
+    (document.getElementById('sieve-content') as HTMLTextAreaElement).value = '';
+    // Reset visual builder
+    document.getElementById('sieve-conditions')!.replaceChildren();
+    (document.getElementById('sieve-condition-logic') as HTMLSelectElement).value = 'allof';
+    (document.getElementById('sieve-action') as HTMLSelectElement).value = 'fileinto';
+    (document.getElementById('sieve-action-value') as HTMLInputElement).value = '';
+    updateActionValueVisibility();
+    addConditionRow();
+    switchSieveMode('visual');
+  }
+  hideMsg('sieve-edit-msg');
+  showView('sieveEdit');
+}
+
+async function saveSieve(): Promise<void> {
+  if (!currentAlias) return;
+  const domain = currentDomain;
+  const aliasId = currentAlias.id;
+
+  const name = (document.getElementById('sieve-name') as HTMLInputElement).value.trim();
+  if (!name) {
+    showMsg('sieve-edit-msg', 'error', t('errorNameRequired', 'Name is required.'));
+    return;
+  }
+
+  // Sync visual builder to raw textarea if in visual mode
+  if (sieveMode === 'visual') {
+    syncVisualToRaw();
+  }
+
+  const data = {
+    name,
+    description: (document.getElementById('sieve-description') as HTMLInputElement).value.trim(),
+    content: (document.getElementById('sieve-content') as HTMLTextAreaElement).value,
+  };
+
+  showGlobalLoading(true);
+  let res;
+  if (sieveEditMode === 'edit' && currentSieveScript) {
+    res = await send({ type: 'updateSieveScript', domain, aliasId, scriptId: currentSieveScript.id, data });
+  } else {
+    res = await send({ type: 'createSieveScript', domain, aliasId, data });
+  }
+  showGlobalLoading(false);
+
+  if (res.error) {
+    showMsg('sieve-edit-msg', 'error', friendlyError({ message: res.error, status: res.status }));
+  } else {
+    showMsg('sieve-edit-msg', 'success', t('sieveSavedOk', 'Saved.'));
+    await openSieveList();
+  }
+}
+
+async function activateSieve(script: SieveScript): Promise<void> {
+  if (!currentAlias) return;
+  const domain = currentDomain;
+  const aliasId = currentAlias.id;
+
+  showGlobalLoading(true);
+  const res = await send({ type: 'activateSieveScript', domain, aliasId, scriptId: script.id });
+  showGlobalLoading(false);
+
+  if (res.error) {
+    showMsg('detail-msg', 'error', friendlyError({ message: res.error, status: res.status }));
+  } else {
+    await openSieveList();
+  }
+}
+
+function confirmDeleteSieve(script: SieveScript): void {
+  currentSieveScript = script;
+  document.getElementById('modal-sieve-delete-name')!.textContent = script.name;
+  document.getElementById('modal-sieve-delete')!.classList.remove('hidden');
+}
+
+async function executeDeleteSieve(): Promise<void> {
+  if (!currentAlias || !currentSieveScript) return;
+  const domain = currentDomain;
+  const aliasId = currentAlias.id;
+
+  document.getElementById('modal-sieve-delete')!.classList.add('hidden');
+  showGlobalLoading(true);
+
+  const res = await send({ type: 'deleteSieveScript', domain, aliasId, scriptId: currentSieveScript.id });
+  showGlobalLoading(false);
+
+  if (res.error) {
+    const sieveError = document.getElementById('sieve-list-error')!;
+    sieveError.textContent = friendlyError({ message: res.error, status: res.status });
+    sieveError.className = 'error-msg error';
+    sieveError.classList.remove('hidden');
+  } else {
+    await openSieveList();
+  }
+}
+
+/* ====== Visual filter builder ====== */
+let sieveMode: 'visual' | 'raw' = 'visual';
+
+function addConditionRow(): void {
+  const container = document.getElementById('sieve-conditions')!;
+
+  const row = document.createElement('div');
+  row.className = 'condition-row';
+
+  const headerSelect = document.createElement('select');
+  for (const [val, label] of [
+    ['from', t('headerFrom', 'From')],
+    ['to', t('headerTo', 'To')],
+    ['subject', t('headerSubject', 'Subject')],
+    ['cc', t('headerCc', 'Cc')],
+    ['reply-to', t('headerReplyTo', 'Reply-To')],
+  ]) {
+    const opt = document.createElement('option');
+    opt.value = val;
+    opt.textContent = label;
+    headerSelect.appendChild(opt);
+  }
+
+  const opSelect = document.createElement('select');
+  for (const [val, label] of [
+    ['contains', t('operatorContains', 'contains')],
+    ['is', t('operatorIs', 'is')],
+    ['matches', t('operatorMatches', 'matches')],
+    ['regex', t('operatorRegex', 'regex')],
+  ]) {
+    const opt = document.createElement('option');
+    opt.value = val;
+    opt.textContent = label;
+    opSelect.appendChild(opt);
+  }
+
+  const valueInput = document.createElement('input');
+  valueInput.type = 'text';
+
+  const removeBtn = document.createElement('button');
+  removeBtn.className = 'btn-remove-condition';
+  removeBtn.textContent = '\u00d7';
+  removeBtn.title = t('btnRemoveCondition', 'Remove');
+  removeBtn.addEventListener('click', () => row.remove());
+
+  row.appendChild(headerSelect);
+  row.appendChild(opSelect);
+  row.appendChild(valueInput);
+  row.appendChild(removeBtn);
+  container.appendChild(row);
+}
+
+function collectFilterRule(): FilterRule {
+  const container = document.getElementById('sieve-conditions')!;
+  const rows = container.querySelectorAll('.condition-row');
+  const conditions: FilterCondition[] = [];
+
+  for (const row of rows) {
+    const selects = row.querySelectorAll('select');
+    const input = row.querySelector('input') as HTMLInputElement;
+    conditions.push({
+      header: selects[0].value,
+      operator: selects[1].value,
+      value: input.value,
+    });
+  }
+
+  return {
+    conditions,
+    conditionLogic: (document.getElementById('sieve-condition-logic') as HTMLSelectElement).value as 'allof' | 'anyof',
+    action: (document.getElementById('sieve-action') as HTMLSelectElement).value as FilterRule['action'],
+    actionValue: (document.getElementById('sieve-action-value') as HTMLInputElement).value.trim() || undefined,
+  };
+}
+
+function syncVisualToRaw(): void {
+  const rule = collectFilterRule();
+  (document.getElementById('sieve-content') as HTMLTextAreaElement).value = buildSieveScript(rule);
+}
+
+function switchSieveMode(mode: 'visual' | 'raw'): void {
+  sieveMode = mode;
+  const visualTab = document.getElementById('sieve-tab-visual')!;
+  const rawTab = document.getElementById('sieve-tab-raw')!;
+  const visualPanel = document.getElementById('sieve-panel-visual')!;
+  const rawPanel = document.getElementById('sieve-panel-raw')!;
+
+  if (mode === 'visual') {
+    visualTab.classList.add('active');
+    rawTab.classList.remove('active');
+    visualPanel.classList.remove('hidden');
+    rawPanel.classList.add('hidden');
+  } else {
+    syncVisualToRaw();
+    rawTab.classList.add('active');
+    visualTab.classList.remove('active');
+    rawPanel.classList.remove('hidden');
+    visualPanel.classList.add('hidden');
+  }
+}
+
+function updateActionValueVisibility(): void {
+  const action = (document.getElementById('sieve-action') as HTMLSelectElement).value;
+  const group = document.getElementById('sieve-action-value-group')!;
+  // flag and discard don't need a value
+  group.classList.toggle('hidden', action === 'flag' || action === 'discard');
+}
+
 /* ====== Event listeners ====== */
 document.getElementById('btn-settings')!.addEventListener('click', () => {
   browser.runtime.openOptionsPage();
@@ -509,6 +856,24 @@ document.getElementById('btn-delete-alias')!.addEventListener('click', confirmDe
 
 document.getElementById('create-back')!.addEventListener('click', () => showView('list'));
 document.getElementById('btn-create-alias')!.addEventListener('click', executeCreate);
+
+document.getElementById('btn-manage-filters')!.addEventListener('click', openSieveList);
+
+document.getElementById('sieve-list-back')!.addEventListener('click', () => showView('detail'));
+document.getElementById('btn-new-script')!.addEventListener('click', () => openSieveEditor());
+
+document.getElementById('sieve-edit-back')!.addEventListener('click', () => openSieveList());
+document.getElementById('btn-save-script')!.addEventListener('click', saveSieve);
+
+document.getElementById('sieve-tab-visual')!.addEventListener('click', () => switchSieveMode('visual'));
+document.getElementById('sieve-tab-raw')!.addEventListener('click', () => switchSieveMode('raw'));
+document.getElementById('btn-add-condition')!.addEventListener('click', addConditionRow);
+document.getElementById('sieve-action')!.addEventListener('change', updateActionValueVisibility);
+
+document.getElementById('modal-sieve-delete-confirm')!.addEventListener('click', executeDeleteSieve);
+document.getElementById('modal-sieve-delete-cancel')!.addEventListener('click', () => {
+  document.getElementById('modal-sieve-delete')!.classList.add('hidden');
+});
 
 document.getElementById('modal-delete-confirm')!.addEventListener('click', executeDelete);
 document.getElementById('modal-delete-cancel')!.addEventListener('click', () => {

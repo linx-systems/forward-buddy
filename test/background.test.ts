@@ -1,7 +1,7 @@
 import { describe, it, beforeEach, afterEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import './setup.js';
-import { invalidateAll, setCachedAliases, setCachedDomains, getCachedAliases } from '../src/lib/cache.js';
+import { invalidateAll, setCachedAliases, setCachedDomains, getCachedAliases, getCachedSieveScripts, setCachedSieveScripts } from '../src/lib/cache.js';
 
 /**
  * The background script registers a message listener on import.
@@ -301,6 +301,88 @@ describe('message display badge updates', () => {
     assert.deepEqual(badgeTextCall.arguments[0], { text: '1', tabId: 9 });
     assert.equal(setBadgeBackgroundColor.mock.calls.length, 1);
     assert.equal(setTitle.mock.calls.length, 1);
+  });
+});
+
+/* ====== getSieveScripts handler ====== */
+describe('getSieveScripts handler', () => {
+  it('fetches sieve scripts and caches them', async () => {
+    await (globalThis as any).browser.storage.local.set({ apiToken: 'test-token' });
+    const scripts = [{ id: 's1', name: 'test', content: 'keep;' }];
+    fetchMock.mock.mockImplementation(async () => mockResponse(200, scripts));
+
+    const res = await send({ type: 'getSieveScripts', domain: 'example.com', aliasId: 'a1' });
+
+    assert.deepEqual(res.data, scripts);
+
+    // Second call should use cache
+    const res2 = await send({ type: 'getSieveScripts', domain: 'example.com', aliasId: 'a1' });
+    assert.deepEqual(res2.data, scripts);
+    assert.equal(fetchMock.mock.calls.length, 1);
+  });
+});
+
+/* ====== createSieveScript handler ====== */
+describe('createSieveScript handler', () => {
+  it('creates script and invalidates cache', async () => {
+    await (globalThis as any).browser.storage.local.set({ apiToken: 'test-token' });
+    setCachedSieveScripts('example.com', 'a1', [{ id: 's1' }] as any);
+
+    const newScript = { id: 's2', name: 'new' };
+    fetchMock.mock.mockImplementation(async () => mockResponse(200, newScript));
+
+    const res = await send({
+      type: 'createSieveScript',
+      domain: 'example.com',
+      aliasId: 'a1',
+      data: { name: 'new', content: 'keep;' },
+    });
+
+    assert.deepEqual(res.data, newScript);
+    assert.equal(getCachedSieveScripts('example.com', 'a1'), null);
+  });
+});
+
+/* ====== deleteSieveScript handler ====== */
+describe('deleteSieveScript handler', () => {
+  it('deletes script and invalidates cache', async () => {
+    await (globalThis as any).browser.storage.local.set({ apiToken: 'test-token' });
+    setCachedSieveScripts('example.com', 'a1', [{ id: 's1' }] as any);
+
+    fetchMock.mock.mockImplementation(async () => ({
+      ok: true, status: 204, statusText: 'No Content', json: async () => null,
+    }));
+
+    const res = await send({
+      type: 'deleteSieveScript',
+      domain: 'example.com',
+      aliasId: 'a1',
+      scriptId: 's1',
+    });
+
+    assert.deepEqual(res.data, { ok: true });
+    assert.equal(getCachedSieveScripts('example.com', 'a1'), null);
+  });
+});
+
+/* ====== activateSieveScript handler ====== */
+describe('activateSieveScript handler', () => {
+  it('activates script and invalidates cache', async () => {
+    await (globalThis as any).browser.storage.local.set({ apiToken: 'test-token' });
+    setCachedSieveScripts('example.com', 'a1', [{ id: 's1' }] as any);
+
+    const activated = { id: 's1', name: 'test', is_active: true };
+    fetchMock.mock.mockImplementation(async () => mockResponse(200, activated));
+
+    const res = await send({
+      type: 'activateSieveScript',
+      domain: 'example.com',
+      aliasId: 'a1',
+      scriptId: 's1',
+    });
+
+    assert.deepEqual(res.data, activated);
+    assert.equal(getCachedSieveScripts('example.com', 'a1'), null);
   });
 });
 

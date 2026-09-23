@@ -298,5 +298,205 @@
   "msgDisplayUnblockError": {
     "message": "Failed to unblock",
     "description": "Error message when unblocking fails"
+  },
+  "vacationTitle": {
+    "message": "Vacation Responder",
+    "description": "Title for vacation responder section"
+  },
+  "vacationEnabled": {
+    "message": "Enabled",
+    "description": "Toggle label for vacation responder"
+  },
+  "vacationStartDate": {
+    "message": "Start Date",
+    "description": "Label for vacation start date"
+  },
+  "vacationEndDate": {
+    "message": "End Date",
+    "description": "Label for vacation end date"
+  },
+  "vacationSubject": {
+    "message": "Subject",
+    "description": "Label for vacation reply subject"
+  },
+  "vacationMessage": {
+    "message": "Message",
+    "description": "Label for vacation reply message body"
+  },
+  "vacationSubjectPlaceholder": {
+    "message": "Out of office",
+    "description": "Placeholder for vacation subject input"
+  },
+  "vacationMessagePlaceholder": {
+    "message": "I am currently out of the office...",
+    "description": "Placeholder for vacation message textarea"
+  },
+  "errorVacationDateRange": {
+    "message": "End date must be on or after start date.",
+    "description": "Validation error when vacation end date is before start date"
+  },
+  "btnManageFilters": {
+    "message": "Manage Filters",
+    "description": "Button to open sieve script management"
+  },
+  "titleSieveScripts": {
+    "message": "Sieve Scripts",
+    "description": "Title for sieve script list view"
+  },
+  "noSieveScripts": {
+    "message": "No scripts found.",
+    "description": "Empty state when no sieve scripts exist"
+  },
+  "btnNewScript": {
+    "message": "New Script",
+    "description": "Button to create a new sieve script"
+  },
+  "titleCreateScript": {
+    "message": "New Script",
+    "description": "Title when creating a new sieve script"
+  },
+  "titleEditScript": {
+    "message": "Edit Script",
+    "description": "Title when editing an existing sieve script"
+  },
+  "labelScriptName": {
+    "message": "Name",
+    "description": "Label for sieve script name input"
+  },
+  "labelScriptDescription": {
+    "message": "Description",
+    "description": "Label for sieve script description input"
+  },
+  "labelScriptContent": {
+    "message": "Sieve Script",
+    "description": "Label for sieve script content textarea"
+  },
+  "hintSieveScript": {
+    "message": "RFC 5228 Sieve filter script",
+    "description": "Hint text below sieve script textarea"
+  },
+  "btnSaveScript": {
+    "message": "Save Script",
+    "description": "Button to save sieve script"
+  },
+  "confirmDeleteScript": {
+    "message": "Are you sure you want to delete this script?",
+    "description": "Delete confirmation for sieve script"
+  },
+  "sieveActive": {
+    "message": "Active",
+    "description": "Badge label for active sieve script"
+  },
+  "btnActivate": {
+    "message": "Activate",
+    "description": "Button to activate a sieve script"
+  },
+  "sieveSavedOk": {
+    "message": "Script saved.",
+    "description": "Success message after saving a sieve script"
+  },
+  "sieveDeletedOk": {
+    "message": "Script deleted.",
+    "description": "Success message after deleting a sieve script"
+  },
+  "sieveModeVisual": {
+    "message": "Visual",
+    "description": "Tab label for visual filter builder"
+  },
+  "sieveModeRaw": {
+    "message": "Raw Script",
+    "description": "Tab label for raw sieve script editor"
+  },
+  "labelConditionLogic": {
+    "message": "Match",
+    "description": "Label for condition logic selector"
+  },
+  "conditionLogicAll": {
+    "message": "All conditions",
+    "description": "Option for allof condition logic"
+  },
+  "conditionLogicAny": {
+    "message": "Any condition",
+    "description": "Option for anyof condition logic"
+  },
+  "btnAddCondition": {
+    "message": "Add Condition",
+    "description": "Button to add a filter condition"
+  },
+  "labelHeader": {
+    "message": "Header",
+    "description": "Label for header selector"
+  },
+  "headerFrom": {
+    "message": "From",
+    "description": "Header option: From"
+  },
+  "headerTo": {
+    "message": "To",
+    "description": "Header option: To"
+  },
+  "headerSubject": {
+    "message": "Subject",
+    "description": "Header option: Subject"
+  },
+  "headerCc": {
+    "message": "Cc",
+    "description": "Header option: Cc"
+  },
+  "headerReplyTo": {
+    "message": "Reply-To",
+    "description": "Header option: Reply-To"
+  },
+  "labelOperator": {
+    "message": "Operator",
+    "description": "Label for operator selector"
+  },
+  "operatorContains": {
+    "message": "contains",
+    "description": "Operator option: contains"
+  },
+  "operatorIs": {
+    "message": "is",
+    "description": "Operator option: is"
+  },
+  "operatorMatches": {
+    "message": "matches",
+    "description": "Operator option: matches"
+  },
+  "operatorRegex": {
+    "message": "regex",
+    "description": "Operator option: regex"
+  },
+  "labelAction": {
+    "message": "Action",
+    "description": "Label for action selector"
+  },
+  "actionFileinto": {
+    "message": "Move to folder",
+    "description": "Action option: fileinto"
+  },
+  "actionReject": {
+    "message": "Reject",
+    "description": "Action option: reject"
+  },
+  "actionFlag": {
+    "message": "Flag message",
+    "description": "Action option: flag"
+  },
+  "actionRedirect": {
+    "message": "Redirect",
+    "description": "Action option: redirect"
+  },
+  "actionDiscard": {
+    "message": "Discard",
+    "description": "Action option: discard"
+  },
+  "labelActionValue": {
+    "message": "Value",
+    "description": "Label for action value input"
+  },
+  "btnRemoveCondition": {
+    "message": "Remove",
+    "description": "Button to remove a condition row"
   }
 }

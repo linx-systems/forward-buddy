@@ -118,6 +118,17 @@ export function resolveDomain(alias: { domain?: string | { name: string } } | nu
 }
 
 /**
+ * Convert an ISO date string or YYYY-MM-DD to a value suitable for <input type="date">.
+ * Returns empty string for falsy or invalid input.
+ */
+export function toDateInputValue(dateStr: string | null | undefined): string {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '';
+  return d.toISOString().slice(0, 10);
+}
+
+/**
  * Parse an email address string into local part and domain.
  * Handles formats: "user@domain", "<user@domain>", "Display Name <user@domain>"
  */

@@ -23,6 +23,22 @@ export interface Alias {
   has_recipient_verification?: boolean;
   created_at?: string;
   updated_at?: string;
+  vacation_responder_is_enabled?: boolean;
+  vacation_responder_start_date?: string;
+  vacation_responder_end_date?: string;
+  vacation_responder_subject?: string;
+  vacation_responder_message?: string;
+  [key: string]: unknown;
+}
+
+export interface SieveScript {
+  id: string;
+  name: string;
+  content: string;
+  description?: string;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
   [key: string]: unknown;
 }
 

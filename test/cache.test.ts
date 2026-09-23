@@ -9,6 +9,9 @@ import {
   invalidateAll,
   updateCachedAlias,
   removeCachedAlias,
+  getCachedSieveScripts,
+  setCachedSieveScripts,
+  invalidateSieveScripts,
 } from '../src/lib/cache.js';
 
 beforeEach(() => {
@@ -118,6 +121,42 @@ describe('removeCachedAlias', () => {
 
   it('returns false when domain not cached', () => {
     assert.equal(removeCachedAlias('no-domain.com', '1'), false);
+  });
+});
+
+/* ====== Sieve script cache ====== */
+describe('sieve script cache', () => {
+  it('returns null when no data cached', () => {
+    assert.equal(getCachedSieveScripts('example.com', 'alias1'), null);
+  });
+
+  it('stores and retrieves sieve scripts', () => {
+    const scripts = [{ id: 's1', name: 'test', content: 'keep;' }];
+    setCachedSieveScripts('example.com', 'alias1', scripts as any);
+    assert.deepEqual(getCachedSieveScripts('example.com', 'alias1'), scripts);
+  });
+
+  it('isolates by domain and alias', () => {
+    const scripts1 = [{ id: 's1', name: 'a', content: '' }];
+    const scripts2 = [{ id: 's2', name: 'b', content: '' }];
+    setCachedSieveScripts('example.com', 'alias1', scripts1 as any);
+    setCachedSieveScripts('example.com', 'alias2', scripts2 as any);
+    assert.deepEqual(getCachedSieveScripts('example.com', 'alias1'), scripts1);
+    assert.deepEqual(getCachedSieveScripts('example.com', 'alias2'), scripts2);
+  });
+
+  it('invalidateSieveScripts clears specific alias cache', () => {
+    setCachedSieveScripts('example.com', 'alias1', [{ id: 's1' }] as any);
+    setCachedSieveScripts('example.com', 'alias2', [{ id: 's2' }] as any);
+    invalidateSieveScripts('example.com', 'alias1');
+    assert.equal(getCachedSieveScripts('example.com', 'alias1'), null);
+    assert.notEqual(getCachedSieveScripts('example.com', 'alias2'), null);
+  });
+
+  it('is cleared by invalidateAll', () => {
+    setCachedSieveScripts('example.com', 'alias1', [{ id: 's1' }] as any);
+    invalidateAll();
+    assert.equal(getCachedSieveScripts('example.com', 'alias1'), null);
   });
 });
 

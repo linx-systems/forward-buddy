@@ -4,7 +4,7 @@
  * Base URL: https://api.forwardemail.net/v1
  */
 
-import type { Account, Alias, Domain, PasswordResult } from '../types/forward-email.js';
+import type { Account, Alias, Domain, PasswordResult, SieveScript } from '../types/forward-email.js';
 
 export class ApiError extends Error {
   status: number;
@@ -167,4 +167,34 @@ export function generatePassword(token: string, domain: string, id: string): Pro
     'POST',
     `/domains/${encodeURIComponent(domain)}/aliases/${encodeURIComponent(id)}/generate-password`,
   );
+}
+
+/* ---- Sieve scripts ---- */
+
+function sievePath(domain: string, aliasId: string): string {
+  return `/domains/${encodeURIComponent(domain)}/aliases/${encodeURIComponent(aliasId)}/sieve`;
+}
+
+export function getSieveScripts(token: string, domain: string, aliasId: string): Promise<SieveScript[]> {
+  return requestAllPages<SieveScript>(token, sievePath(domain, aliasId));
+}
+
+export function getSieveScript(token: string, domain: string, aliasId: string, scriptId: string): Promise<SieveScript> {
+  return request(token, 'GET', `${sievePath(domain, aliasId)}/${encodeURIComponent(scriptId)}`);
+}
+
+export function createSieveScript(token: string, domain: string, aliasId: string, data: Partial<SieveScript>): Promise<SieveScript> {
+  return request(token, 'POST', sievePath(domain, aliasId), data);
+}
+
+export function updateSieveScript(token: string, domain: string, aliasId: string, scriptId: string, data: Partial<SieveScript>): Promise<SieveScript> {
+  return request(token, 'PUT', `${sievePath(domain, aliasId)}/${encodeURIComponent(scriptId)}`, data);
+}
+
+export function deleteSieveScript(token: string, domain: string, aliasId: string, scriptId: string): Promise<null> {
+  return request(token, 'DELETE', `${sievePath(domain, aliasId)}/${encodeURIComponent(scriptId)}`);
+}
+
+export function activateSieveScript(token: string, domain: string, aliasId: string, scriptId: string): Promise<SieveScript> {
+  return request(token, 'POST', `${sievePath(domain, aliasId)}/${encodeURIComponent(scriptId)}/activate`);
 }

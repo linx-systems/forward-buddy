@@ -3,7 +3,7 @@
  * Domain list: 5 min TTL. Alias list per domain: 2 min TTL.
  */
 
-import type { Alias, Domain } from '../types/forward-email.js';
+import type { Alias, Domain, SieveScript } from '../types/forward-email.js';
 
 interface CacheEntry<T> {
   data: T;
@@ -90,6 +90,20 @@ export function removeCachedAlias(domain: string, id: string): boolean {
   if (idx === -1) return false;
   list.splice(idx, 1);
   return true;
+}
+
+/* ---- Sieve script cache ---- */
+
+export function getCachedSieveScripts(domain: string, aliasId: string): SieveScript[] | null {
+  return get<SieveScript[]>(makeKey('sieve', domain, aliasId));
+}
+
+export function setCachedSieveScripts(domain: string, aliasId: string, data: SieveScript[]): void {
+  set(makeKey('sieve', domain, aliasId), data, ALIAS_TTL);
+}
+
+export function invalidateSieveScripts(domain: string, aliasId: string): void {
+  invalidate(makeKey('sieve', domain, aliasId));
 }
 
 /** Invalidate all caches. */

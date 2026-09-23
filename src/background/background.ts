@@ -8,7 +8,8 @@ import * as cache from '../lib/cache.js';
 import { parseEmailAddress, matchesAlias, aliasPriority } from '../lib/utils.js';
 import type { Alias } from '../types/forward-email.js';
 import type { MessageType } from '../types/messages.js';
-import { DEMO_DOMAINS, DEMO_ALIASES } from '../lib/demo-data.js';
+import type { SieveScript } from '../types/forward-email.js';
+import { DEMO_DOMAINS, DEMO_ALIASES, DEMO_SIEVE_SCRIPTS } from '../lib/demo-data.js';
 
 let demoMode = false;
 
@@ -50,6 +51,49 @@ const demoHandlers: Record<string, (msg: any) => Promise<unknown>> = {
     return { generated_password: 'demo-p4ssw0rd-x7k9m2' };
   },
   async matchAliases() { return []; },
+  async getSieveScripts({ domain, aliasId }: { domain: string; aliasId: string }) {
+    return DEMO_SIEVE_SCRIPTS[`${domain}:${aliasId}`] ?? [];
+  },
+  async getSieveScript({ domain, aliasId, scriptId }: { domain: string; aliasId: string; scriptId: string }) {
+    const scripts = DEMO_SIEVE_SCRIPTS[`${domain}:${aliasId}`] ?? [];
+    const script = scripts.find((s) => s.id === scriptId);
+    if (!script) throw new Error('Script not found');
+    return script;
+  },
+  async createSieveScript({ domain, aliasId, data }: { domain: string; aliasId: string; data: Partial<SieveScript> }) {
+    const script: SieveScript = {
+      id: `sieve-${Date.now()}`, name: (data.name as string) || 'Untitled',
+      content: (data.content as string) || '', description: (data.description as string) ?? '',
+      is_active: false,
+      created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+    };
+    const key = `${domain}:${aliasId}`;
+    (DEMO_SIEVE_SCRIPTS[key] ??= []).push(script);
+    return script;
+  },
+  async updateSieveScript({ domain, aliasId, scriptId, data }: { domain: string; aliasId: string; scriptId: string; data: Partial<SieveScript> }) {
+    const scripts = DEMO_SIEVE_SCRIPTS[`${domain}:${aliasId}`] ?? [];
+    const script = scripts.find((s) => s.id === scriptId);
+    if (!script) throw new Error('Script not found');
+    const safeData = Object.fromEntries(
+      Object.entries(data).filter(([k]) => !['__proto__', 'constructor', 'prototype'].includes(k)),
+    );
+    Object.assign(script, safeData, { updated_at: new Date().toISOString() });
+    return script;
+  },
+  async deleteSieveScript({ domain, aliasId, scriptId }: { domain: string; aliasId: string; scriptId: string }) {
+    const key = `${domain}:${aliasId}`;
+    const scripts = DEMO_SIEVE_SCRIPTS[key];
+    if (scripts) DEMO_SIEVE_SCRIPTS[key] = scripts.filter((s) => s.id !== scriptId);
+    return { ok: true };
+  },
+  async activateSieveScript({ domain, aliasId, scriptId }: { domain: string; aliasId: string; scriptId: string }) {
+    const scripts = DEMO_SIEVE_SCRIPTS[`${domain}:${aliasId}`] ?? [];
+    for (const s of scripts) s.is_active = s.id === scriptId;
+    const script = scripts.find((s) => s.id === scriptId);
+    if (!script) throw new Error('Script not found');
+    return script;
+  },
 };
 
 async function getToken(): Promise<string> {
@@ -124,6 +168,48 @@ const handlers: Record<string, (msg: any) => Promise<unknown>> = {
   async generatePassword({ domain, id }: { domain: string; id: string }) {
     const token = await getActiveToken();
     return api.generatePassword(token, domain, id);
+  },
+
+  async getSieveScripts({ domain, aliasId }: { domain: string; aliasId: string }) {
+    const token = await getActiveToken();
+    const cached = cache.getCachedSieveScripts(domain, aliasId);
+    if (cached) return cached;
+    const data = await api.getSieveScripts(token, domain, aliasId);
+    cache.setCachedSieveScripts(domain, aliasId, data);
+    return data;
+  },
+
+  async getSieveScript({ domain, aliasId, scriptId }: { domain: string; aliasId: string; scriptId: string }) {
+    const token = await getActiveToken();
+    return api.getSieveScript(token, domain, aliasId, scriptId);
+  },
+
+  async createSieveScript({ domain, aliasId, data }: { domain: string; aliasId: string; data: Partial<SieveScript> }) {
+    const token = await getActiveToken();
+    const result = await api.createSieveScript(token, domain, aliasId, data);
+    cache.invalidateSieveScripts(domain, aliasId);
+    return result;
+  },
+
+  async updateSieveScript({ domain, aliasId, scriptId, data }: { domain: string; aliasId: string; scriptId: string; data: Partial<SieveScript> }) {
+    const token = await getActiveToken();
+    const result = await api.updateSieveScript(token, domain, aliasId, scriptId, data);
+    cache.invalidateSieveScripts(domain, aliasId);
+    return result;
+  },
+
+  async deleteSieveScript({ domain, aliasId, scriptId }: { domain: string; aliasId: string; scriptId: string }) {
+    const token = await getActiveToken();
+    await api.deleteSieveScript(token, domain, aliasId, scriptId);
+    cache.invalidateSieveScripts(domain, aliasId);
+    return { ok: true };
+  },
+
+  async activateSieveScript({ domain, aliasId, scriptId }: { domain: string; aliasId: string; scriptId: string }) {
+    const token = await getActiveToken();
+    const result = await api.activateSieveScript(token, domain, aliasId, scriptId);
+    cache.invalidateSieveScripts(domain, aliasId);
+    return result;
   },
 
   async matchAliases({ addresses }: { addresses: string[] }) {

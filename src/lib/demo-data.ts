@@ -1,4 +1,4 @@
-import type { Alias } from '../types/forward-email.js';
+import type { Alias, SieveScript } from '../types/forward-email.js';
 
 export const DEMO_DOMAINS = [
   { name: 'example.com' },
@@ -12,6 +12,11 @@ export const DEMO_ALIASES: Record<string, Alias[]> = {
       recipients: ['john@gmail.com'], description: 'Main contact alias',
       labels: ['personal'], has_imap: true, has_pgp: false,
       has_recipient_verification: false,
+      vacation_responder_is_enabled: true,
+      vacation_responder_start_date: '2026-04-20',
+      vacation_responder_end_date: '2026-05-04',
+      vacation_responder_subject: 'Out of office',
+      vacation_responder_message: 'Thanks for your email! I am on vacation until May 4th and will reply when I return.',
       created_at: '2025-01-15T10:30:00Z', updated_at: '2025-06-20T14:00:00Z',
     },
     {
@@ -50,6 +55,25 @@ export const DEMO_ALIASES: Record<string, Alias[]> = {
       labels: ['blog'], has_imap: true, has_pgp: false,
       has_recipient_verification: false,
       created_at: '2025-05-01T09:00:00Z', updated_at: '2025-05-01T09:00:00Z',
+    },
+  ],
+};
+
+export const DEMO_SIEVE_SCRIPTS: Record<string, SieveScript[]> = {
+  'example.com:demo-1': [
+    {
+      id: 'sieve-1', name: 'File newsletters',
+      content: 'require "fileinto";\nif header :contains "List-Id" "newsletter" {\n  fileinto "Newsletters";\n}',
+      description: 'Move newsletter messages to folder',
+      is_active: true,
+      created_at: '2025-06-01T10:00:00Z', updated_at: '2025-06-01T10:00:00Z',
+    },
+    {
+      id: 'sieve-2', name: 'Reject spam senders',
+      content: 'if header :is "from" "spammer@junk.com" {\n  reject "Unwanted mail";\n}',
+      description: 'Block known spam sender',
+      is_active: false,
+      created_at: '2025-07-15T12:00:00Z', updated_at: '2025-07-15T12:00:00Z',
     },
   ],
 };

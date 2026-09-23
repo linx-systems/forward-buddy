@@ -120,8 +120,9 @@ body {
 .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
 .btn-secondary { background: var(--bg-secondary); color: var(--fg); border: 1px solid var(--border); }
 .btn-secondary:hover:not(:disabled) { background: var(--bg-hover); }
-.btn-danger { background: var(--danger); color: #fff; width: 100%; margin-top: 8px; }
+.btn-danger { background: var(--danger); color: #fff; }
 .btn-danger:hover:not(:disabled) { background: var(--danger-hover); }
+.btn-block { width: 100%; }
 .btn-back {
   background: none;
   border: none;
@@ -133,6 +134,17 @@ body {
 }
 
 .button-row { display: flex; gap: 8px; margin-top: 12px; }
+.button-row .btn {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.detail-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+.detail-actions .button-row { margin-top: 0; }
 
 /* ====== Alias list ====== */
 .alias-list {
@@ -298,10 +310,159 @@ body {
   color: var(--fg);
 }
 
+/* ====== Vacation responder ====== */
+#detail-vacation {
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0;
+}
+#detail-vacation summary {
+  cursor: pointer;
+  padding: 8px 12px;
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--fg);
+  user-select: none;
+}
+#detail-vacation[open] summary {
+  border-bottom: 1px solid var(--border);
+}
+.vacation-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+}
+.form-group input[type="date"] {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-family: inherit;
+  background: var(--bg);
+  color: var(--fg);
+}
+
 .timestamps {
   display: flex;
   gap: 16px;
   color: var(--fg-muted);
+}
+
+/* ====== Sieve scripts ====== */
+.sieve-list {
+  max-height: 280px;
+  overflow-y: auto;
+}
+.sieve-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.sieve-item-info {
+  flex: 1;
+  min-width: 0;
+}
+.sieve-item-name {
+  font-weight: 500;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.sieve-item-desc {
+  font-size: 11px;
+  color: var(--fg-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sieve-active-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--success);
+  white-space: nowrap;
+}
+.sieve-item-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.sieve-item-actions .btn {
+  padding: 3px 8px;
+  font-size: 11px;
+}
+.sieve-editor-textarea {
+  font-family: monospace;
+  min-height: 200px;
+}
+.sieve-mode-tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.sieve-tab {
+  flex: 1;
+  padding: 6px 12px;
+  border: none;
+  background: var(--bg-secondary);
+  color: var(--fg-muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.sieve-tab.active {
+  background: var(--primary);
+  color: #fff;
+}
+.sieve-tab:hover:not(.active) {
+  background: var(--bg-hover);
+}
+.sieve-panel.hidden {
+  display: none;
+}
+.condition-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.condition-row select,
+.condition-row input {
+  flex: 1;
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  background: var(--bg);
+  color: var(--fg);
+}
+.condition-row .btn-remove-condition {
+  flex-shrink: 0;
+  padding: 2px 6px;
+  font-size: 14px;
+  line-height: 1;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: var(--fg-muted);
+}
+.condition-row .btn-remove-condition:hover {
+  background: var(--error-bg);
+  color: var(--error);
 }
 
 /* ====== Messages ====== */
