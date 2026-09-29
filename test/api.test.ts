@@ -1,6 +1,7 @@
 import { describe, it, beforeEach, afterEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  ApiError,
   getAccount,
   getDomains,
   getAliases,
@@ -329,5 +330,64 @@ describe('error handling', () => {
       assert.equal(err.message, 'Internal Server Error');
       return true;
     });
+  });
+});
+
+describe('response normalization', () => {
+  it('normalizes transport failures to a stable ApiError', async () => {
+    fetchMock.mock.mockImplementation(async () => {
+      throw new TypeError('socket closed');
+    });
+
+    await assert.rejects(() => getAccount(TOKEN), (err: unknown) => {
+      assert.ok(err instanceof ApiError);
+      assert.equal(err.status, 0);
+      assert.equal(err.message, 'Network request failed');
+      return true;
+    });
+  });
+
+  it('normalizes malformed successful JSON to a stable ApiError', async () => {
+    fetchMock.mock.mockImplementation(async () => ({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      headers: { get: () => null },
+      json: async () => { throw new Error('invalid json'); },
+    }));
+
+    await assert.rejects(() => getAccount(TOKEN), (err: unknown) => {
+      assert.ok(err instanceof ApiError);
+      assert.equal(err.status, 200);
+      assert.equal(err.message, 'Invalid JSON response');
+      return true;
+    });
+  });
+
+  it('normalizes aborted transport to the timeout error', async () => {
+    fetchMock.mock.mockImplementation(async () => {
+      throw new DOMException('aborted', 'AbortError');
+    });
+
+    await assert.rejects(() => getAccount(TOKEN), (err: unknown) => {
+      assert.ok(err instanceof ApiError);
+      assert.equal(err.status, 0);
+      assert.equal(err.message, 'Request timed out');
+      return true;
+    });
+  });
+
+  it('signals an advertised page count beyond the safety limit', async () => {
+    fetchMock.mock.mockImplementation(async () =>
+      mockResponse(200, [{ name: 'page.example' }], true, { 'X-Page-Count': '101' }),
+    );
+
+    await assert.rejects(() => getDomains(TOKEN), (err: unknown) => {
+      assert.ok(err instanceof ApiError);
+      assert.equal(err.status, 0);
+      assert.equal(err.message, 'Pagination limit reached');
+      return true;
+    });
+    assert.equal(fetchMock.mock.calls.length, 100);
   });
 });

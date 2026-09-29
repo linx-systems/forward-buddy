@@ -5,12 +5,16 @@ import {
   setCachedDomains,
   getCachedAliases,
   setCachedAliases,
+  getAliasesRevision,
+  setCachedAliasesIfCurrent,
   invalidateAliases,
   invalidateAll,
   updateCachedAlias,
   removeCachedAlias,
   getCachedSieveScripts,
   setCachedSieveScripts,
+  getSieveScriptsRevision,
+  setCachedSieveScriptsIfCurrent,
   invalidateSieveScripts,
 } from '../src/lib/cache.js';
 
@@ -167,5 +171,31 @@ describe('TTL expiration', () => {
     // by checking that the cache returns data immediately after setting
     setCachedDomains([{ name: 'example.com' }]);
     assert.notEqual(getCachedDomains(), null);
+  });
+});
+
+describe('cache revisions', () => {
+  it('rejects an alias list write captured before invalidation', () => {
+    const revision = getAliasesRevision('example.com');
+    invalidateAliases('example.com');
+
+    assert.equal(setCachedAliasesIfCurrent('example.com', [{ id: 'stale', name: 'old' }], revision), false);
+    assert.equal(getCachedAliases('example.com'), null);
+  });
+
+  it('rejects a Sieve list write captured before invalidation', () => {
+    const revision = getSieveScriptsRevision('example.com', 'alias-1');
+    invalidateSieveScripts('example.com', 'alias-1');
+
+    assert.equal(
+      setCachedSieveScriptsIfCurrent(
+        'example.com',
+        'alias-1',
+        [{ id: 'stale', name: 'old', content: 'keep;' }],
+        revision,
+      ),
+      false,
+    );
+    assert.equal(getCachedSieveScripts('example.com', 'alias-1'), null);
   });
 });

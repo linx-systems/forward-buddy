@@ -17,7 +17,7 @@
     <details class="instructions">
       <summary data-i18n="setupInstructions">How to get your API token</summary>
       <ol>
-        <li data-i18n="setupStep1">Go to <a href="https://forwardemail.net/my-account/security" target="_blank">forwardemail.net/my-account/security</a></li>
+        <li><span data-i18n="setupStep1">Go to </span><a href="https://forwardemail.net/my-account/security" target="_blank" rel="noopener noreferrer">forwardemail.net/my-account/security</a></li>
         <li data-i18n="setupStep2">Scroll to the "API Tokens" section</li>
         <li data-i18n="setupStep3">Click "Generate" to create a new API token</li>
         <li data-i18n="setupStep4">Copy the token</li>
@@ -31,7 +31,7 @@
       <div class="token-input-wrap">
         <input id="api-token" type="password" autocomplete="off"
                data-i18n-placeholder="placeholderToken" placeholder="Paste your API token here">
-        <button id="toggle-visibility" type="button" class="btn-icon" title="Show/hide token">
+        <button id="toggle-visibility" type="button" class="btn-icon" data-i18n-title="tooltipToggleToken" data-i18n-aria-label="tooltipToggleToken" title="Show or hide token" aria-label="Show or hide token">
           <span id="eye-icon">&#x1f441;</span>
         </button>
       </div>
@@ -48,9 +48,33 @@
     <div class="form-group demo-toggle">
       <label class="toggle-row">
         <input id="demo-mode" type="checkbox">
-        <span>Demo Mode</span>
+        <span data-i18n="labelDemoMode">Demo Mode</span>
       </label>
-      <p class="hint">Shows dummy data instead of real aliases. Useful for screenshots.</p>
+      <p class="hint" data-i18n="hintDemoMode">Shows dummy data instead of real aliases. Useful for screenshots.</p>
+    </div>
+
+    <section class="account-controls" aria-labelledby="account-controls-title">
+      <h2 id="account-controls-title" data-i18n="titleAccountControls">Account</h2>
+      <button id="btn-disconnect" type="button" class="btn btn-danger hidden" data-i18n="btnDisconnect">Disconnect</button>
+    </section>
+
+    <section class="activity-history" aria-labelledby="activity-history-title">
+      <h2 id="activity-history-title" data-i18n="titleActivityHistory">Activity History</h2>
+      <p id="activity-history-description" class="hint" data-i18n="hintActivityHistory">Recent activity stored on this device. It never includes tokens or generated passwords.</p>
+      <ul id="activity-history-list" class="hidden" aria-describedby="activity-history-description"></ul>
+      <p id="activity-history-empty" class="hint" data-i18n="activityHistoryEmpty">No recent activity.</p>
+      <button id="btn-clear-history" type="button" class="btn btn-secondary" data-i18n="btnClearHistory" disabled>Clear History</button>
+    </section>
+  </div>
+
+  <div id="disconnect-modal" class="modal-overlay hidden">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="disconnect-modal-title">
+      <h2 id="disconnect-modal-title" data-i18n="titleDisconnect">Disconnect account</h2>
+      <p data-i18n="confirmDisconnect">Remove the saved API token and account information from this device?</p>
+      <div class="button-row">
+        <button id="btn-disconnect-confirm" type="button" class="btn btn-danger" data-i18n="btnDisconnect">Disconnect</button>
+        <button id="btn-disconnect-cancel" type="button" class="btn btn-secondary" data-i18n="btnCancel">Cancel</button>
+      </div>
     </div>
   </div>
 

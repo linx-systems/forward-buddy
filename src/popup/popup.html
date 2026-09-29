@@ -9,7 +9,7 @@
   <!-- ====== Header ====== -->
   <header class="header">
     <span class="header-title">ForwardEmail</span>
-    <button id="btn-settings" class="btn-icon" title="Settings">&#x2699;</button>
+    <button id="btn-settings" class="btn-icon" type="button" data-i18n-title="tooltipSettings" title="Settings">&#x2699;</button>
   </header>
 
   <!-- ====== Not configured state ====== -->
@@ -24,7 +24,7 @@
   <div id="view-list" class="view hidden">
     <div class="toolbar">
       <select id="domain-select" class="domain-select"></select>
-      <button id="btn-new-alias" class="btn btn-primary btn-sm">+ <span data-i18n="btnNewAlias">New Alias</span></button>
+      <button id="btn-new-alias" type="button" class="btn btn-primary btn-sm">+ <span data-i18n="btnNewAlias">New Alias</span></button>
     </div>
 
     <div class="search-wrap">
@@ -39,7 +39,7 @@
 
     <div id="list-empty" class="empty-state hidden">
       <p data-i18n="noAliases">No aliases found.</p>
-      <button class="btn btn-primary btn-sm btn-create-from-empty">+ <span data-i18n="btnNewAlias">New Alias</span></button>
+      <button type="button" class="btn btn-primary btn-sm btn-create-from-empty">+ <span data-i18n="btnNewAlias">New Alias</span></button>
     </div>
 
     <div id="list-error" class="error-msg hidden"></div>
@@ -55,7 +55,7 @@
     </div>
 
     <div class="form-group">
-      <label data-i18n="labelEnabled">Enabled</label>
+      <label for="detail-enabled" data-i18n="labelEnabled">Enabled</label>
       <label class="toggle">
         <input id="detail-enabled" type="checkbox">
         <span class="toggle-slider"></span>
@@ -63,58 +63,58 @@
     </div>
 
     <div class="form-group">
-      <label data-i18n="labelRecipients">Recipients (one per line)</label>
+      <label for="detail-recipients" data-i18n="labelRecipients">Recipients (one per line)</label>
       <textarea id="detail-recipients" rows="3"></textarea>
     </div>
 
     <div class="form-group">
-      <label data-i18n="labelDescription">Description</label>
+      <label for="detail-description" data-i18n="labelDescription">Description</label>
       <input id="detail-description" type="text">
     </div>
 
     <div class="form-group">
-      <label data-i18n="labelLabels">Labels (comma-separated)</label>
+      <label for="detail-labels" data-i18n="labelLabels">Labels (comma-separated)</label>
       <input id="detail-labels" type="text">
     </div>
 
     <div class="form-group inline-toggles">
-      <label class="toggle-row">
+      <div class="toggle-row">
         <span data-i18n="labelImap">IMAP Storage</span>
         <label class="toggle"><input id="detail-imap" type="checkbox"><span class="toggle-slider"></span></label>
-      </label>
-      <label class="toggle-row">
+      </div>
+      <div class="toggle-row">
         <span data-i18n="labelPgp">PGP Encryption</span>
         <label class="toggle"><input id="detail-pgp" type="checkbox"><span class="toggle-slider"></span></label>
-      </label>
-      <label class="toggle-row">
+      </div>
+      <div class="toggle-row">
         <span data-i18n="labelRecipientVerification">Recipient Verification</span>
         <label class="toggle"><input id="detail-verification" type="checkbox"><span class="toggle-slider"></span></label>
-      </label>
+      </div>
     </div>
 
     <details id="detail-vacation">
       <summary data-i18n="vacationTitle">Vacation Responder</summary>
       <div class="vacation-fields">
         <div class="form-group">
-          <label class="toggle-row">
+          <div class="toggle-row">
             <span data-i18n="vacationEnabled">Enabled</span>
             <label class="toggle"><input id="detail-vacation-enabled" type="checkbox"><span class="toggle-slider"></span></label>
-          </label>
+          </div>
         </div>
         <div class="form-group">
-          <label data-i18n="vacationStartDate">Start Date</label>
+          <label for="detail-vacation-start" data-i18n="vacationStartDate">Start Date</label>
           <input id="detail-vacation-start" type="date">
         </div>
         <div class="form-group">
-          <label data-i18n="vacationEndDate">End Date</label>
+          <label for="detail-vacation-end" data-i18n="vacationEndDate">End Date</label>
           <input id="detail-vacation-end" type="date">
         </div>
         <div class="form-group">
-          <label data-i18n="vacationSubject">Subject</label>
+          <label for="detail-vacation-subject" data-i18n="vacationSubject">Subject</label>
           <input id="detail-vacation-subject" type="text" data-i18n-placeholder="vacationSubjectPlaceholder" placeholder="Out of office">
         </div>
         <div class="form-group">
-          <label data-i18n="vacationMessage">Message</label>
+          <label for="detail-vacation-message" data-i18n="vacationMessage">Message</label>
           <textarea id="detail-vacation-message" rows="3" data-i18n-placeholder="vacationMessagePlaceholder" placeholder="I am currently out of the office..."></textarea>
         </div>
       </div>
@@ -144,36 +144,36 @@
     <h2 data-i18n="titleCreateAlias">Create Alias</h2>
 
     <div class="form-group">
-      <label data-i18n="labelName">Name</label>
+      <label for="create-name" data-i18n="labelName">Name</label>
       <input id="create-name" type="text" data-i18n-placeholder="placeholderName" placeholder="alias name (* for catch-all)">
       <small class="hint" data-i18n="hintName">Use * for catch-all, /regex/ for pattern matching</small>
     </div>
 
     <div class="form-group">
-      <label data-i18n="labelDomain">Domain</label>
+      <label for="create-domain" data-i18n="labelDomain">Domain</label>
       <select id="create-domain" class="domain-select"></select>
     </div>
 
     <div class="form-group">
-      <label data-i18n="labelRecipients">Recipients (one per line)</label>
+      <label for="create-recipients" data-i18n="labelRecipients">Recipients (one per line)</label>
       <textarea id="create-recipients" rows="3"></textarea>
     </div>
 
     <div class="form-group">
-      <label data-i18n="labelDescription">Description</label>
+      <label for="create-description" data-i18n="labelDescription">Description</label>
       <input id="create-description" type="text">
     </div>
 
     <div class="form-group">
-      <label data-i18n="labelLabels">Labels (comma-separated)</label>
+      <label for="create-labels" data-i18n="labelLabels">Labels (comma-separated)</label>
       <input id="create-labels" type="text">
     </div>
 
     <div class="form-group">
-      <label class="toggle-row">
+      <div class="toggle-row">
         <span data-i18n="labelImap">IMAP Storage</span>
         <label class="toggle"><input id="create-imap" type="checkbox"><span class="toggle-slider"></span></label>
-      </label>
+      </div>
     </div>
 
     <button id="btn-create-alias" class="btn btn-primary" data-i18n="btnCreateAlias">Create Alias</button>
@@ -207,12 +207,12 @@
     <h2 id="sieve-edit-title" data-i18n="titleCreateScript">New Script</h2>
 
     <div class="form-group">
-      <label data-i18n="labelScriptName">Name</label>
+      <label for="sieve-name" data-i18n="labelScriptName">Name</label>
       <input id="sieve-name" type="text">
     </div>
 
     <div class="form-group">
-      <label data-i18n="labelScriptDescription">Description</label>
+      <label for="sieve-description" data-i18n="labelScriptDescription">Description</label>
       <input id="sieve-description" type="text">
     </div>
 
@@ -223,7 +223,7 @@
 
     <div id="sieve-panel-visual" class="sieve-panel">
       <div class="form-group">
-        <label data-i18n="labelConditionLogic">Match</label>
+        <label for="sieve-condition-logic" data-i18n="labelConditionLogic">Match</label>
         <select id="sieve-condition-logic" class="domain-select">
           <option value="allof" data-i18n="conditionLogicAll">All conditions</option>
           <option value="anyof" data-i18n="conditionLogicAny">Any condition</option>
@@ -234,7 +234,7 @@
       <button id="btn-add-condition" class="btn btn-secondary btn-sm" style="margin:8px 0;">+ <span data-i18n="btnAddCondition">Add Condition</span></button>
 
       <div class="form-group">
-        <label data-i18n="labelAction">Action</label>
+        <label for="sieve-action" data-i18n="labelAction">Action</label>
         <select id="sieve-action" class="domain-select">
           <option value="fileinto" data-i18n="actionFileinto">Move to folder</option>
           <option value="reject" data-i18n="actionReject">Reject</option>
@@ -245,14 +245,14 @@
       </div>
 
       <div class="form-group" id="sieve-action-value-group">
-        <label data-i18n="labelActionValue">Value</label>
+        <label for="sieve-action-value" data-i18n="labelActionValue">Value</label>
         <input id="sieve-action-value" type="text">
       </div>
     </div>
 
     <div id="sieve-panel-raw" class="sieve-panel hidden">
       <div class="form-group">
-        <label data-i18n="labelScriptContent">Sieve Script</label>
+        <label for="sieve-content" data-i18n="labelScriptContent">Sieve Script</label>
         <textarea id="sieve-content" rows="8" class="sieve-editor-textarea"></textarea>
         <small class="hint" data-i18n="hintSieveScript">RFC 5228 Sieve filter script</small>
       </div>
@@ -265,36 +265,38 @@
 
   <!-- ====== Sieve delete confirmation modal ====== -->
   <div id="modal-sieve-delete" class="modal-overlay hidden">
-    <div class="modal">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-sieve-delete-title">
+      <h2 id="modal-sieve-delete-title" data-i18n="titleDeleteScript">Delete Script</h2>
       <p data-i18n="confirmDeleteScript">Are you sure you want to delete this script?</p>
       <p id="modal-sieve-delete-name" class="modal-detail"></p>
       <div class="button-row">
-        <button id="modal-sieve-delete-confirm" class="btn btn-danger" data-i18n="btnDelete">Delete</button>
-        <button id="modal-sieve-delete-cancel" class="btn btn-secondary" data-i18n="btnCancel">Cancel</button>
+        <button id="modal-sieve-delete-confirm" type="button" class="btn btn-danger" data-i18n="btnDeleteScript">Delete Script</button>
+        <button id="modal-sieve-delete-cancel" type="button" class="btn btn-secondary" data-i18n="btnCancel">Cancel</button>
       </div>
     </div>
   </div>
 
   <!-- ====== Delete confirmation modal ====== -->
   <div id="modal-delete" class="modal-overlay hidden">
-    <div class="modal">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-delete-title">
+      <h2 id="modal-delete-title" data-i18n="titleDeleteAlias">Delete Alias</h2>
       <p data-i18n="confirmDelete">Are you sure you want to delete this alias?</p>
       <p id="modal-delete-name" class="modal-detail"></p>
       <div class="button-row">
-        <button id="modal-delete-confirm" class="btn btn-danger" data-i18n="btnDelete">Delete</button>
-        <button id="modal-delete-cancel" class="btn btn-secondary" data-i18n="btnCancel">Cancel</button>
+        <button id="modal-delete-confirm" type="button" class="btn btn-danger" data-i18n="btnDeleteAlias">Delete Alias</button>
+        <button id="modal-delete-cancel" type="button" class="btn btn-secondary" data-i18n="btnCancel">Cancel</button>
       </div>
     </div>
   </div>
 
   <!-- ====== Password result modal ====== -->
   <div id="modal-password" class="modal-overlay hidden">
-    <div class="modal">
-      <h3 data-i18n="titleGeneratedPassword">Generated Password</h3>
-      <input id="modal-password-value" type="text" readonly class="password-display">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-password-title">
+      <h2 id="modal-password-title" data-i18n="titleGeneratedPassword">Generated Password</h2>
+      <input id="modal-password-value" type="text" readonly class="password-display" data-i18n-aria-label="titleGeneratedPassword" aria-label="Generated Password">
       <div class="button-row">
-        <button id="modal-password-copy" class="btn btn-primary" data-i18n="btnCopy">Copy</button>
-        <button id="modal-password-close" class="btn btn-secondary" data-i18n="btnClose">Close</button>
+        <button id="modal-password-copy" type="button" class="btn btn-primary" data-i18n="btnCopy">Copy</button>
+        <button id="modal-password-close" type="button" class="btn btn-secondary" data-i18n="btnClose">Close</button>
       </div>
     </div>
   </div>

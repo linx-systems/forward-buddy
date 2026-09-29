@@ -164,7 +164,26 @@ body {
 .alias-item:hover { background: var(--bg-hover); }
 .alias-item.alias-disabled .alias-info { opacity: 0.5; }
 
-.alias-info { flex: 1; min-width: 0; }
+.alias-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.alias-open {
+  appearance: none;
+  background: none;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-align: left;
+}
+
+.alias-open:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
 .alias-name-row {
   display: flex;
   align-items: center;
@@ -187,6 +206,12 @@ body {
   white-space: nowrap;
   flex-shrink: 0;
 }
+.alias-email,
+.alias-recipients,
+.alias-desc {
+  display: block;
+}
+
 .alias-email {
   font-size: 11px;
   color: var(--fg-muted);
@@ -526,6 +551,7 @@ body {
   width: 320px;
   max-width: 90%;
 }
+.modal h2,
 .modal h3 { margin-bottom: 12px; }
 .modal p { margin-bottom: 8px; }
 .modal-detail { font-weight: 600; font-size: 14px; }

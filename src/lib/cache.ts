@@ -14,9 +14,20 @@ const DOMAIN_TTL = 5 * 60 * 1000;
 const ALIAS_TTL = 2 * 60 * 1000;
 
 const store = new Map<string, CacheEntry<unknown>>();
+const revisions = new Map<string, number>();
 
 function makeKey(...parts: string[]): string {
   return parts.join(':');
+}
+
+function revision(key: string): number {
+  return revisions.get(key) ?? 0;
+}
+
+function advanceRevision(key: string): number {
+  const next = revision(key) + 1;
+  revisions.set(key, next);
+  return next;
 }
 
 function get<T>(key: string): T | null {
@@ -47,6 +58,7 @@ export function setCachedDomains(data: Domain[]): void {
   set('domains', data, DOMAIN_TTL);
 }
 
+
 export function getCachedAliases(domain: string): Alias[] | null {
   return get<Alias[]>(makeKey('aliases', domain));
 }
@@ -55,9 +67,22 @@ export function setCachedAliases(domain: string, data: Alias[]): void {
   set(makeKey('aliases', domain), data, ALIAS_TTL);
 }
 
+export function getAliasesRevision(domain: string): number {
+  return revision(makeKey('aliases', domain));
+}
+
+export function setCachedAliasesIfCurrent(domain: string, data: Alias[], expectedRevision: number): boolean {
+  const key = makeKey('aliases', domain);
+  if (revision(key) !== expectedRevision) return false;
+  setCachedAliases(domain, data);
+  return true;
+}
+
 /** Invalidate alias cache for a domain (after create/update/delete). */
 export function invalidateAliases(domain: string): void {
-  invalidate(makeKey('aliases', domain));
+  const key = makeKey('aliases', domain);
+  advanceRevision(key);
+  invalidate(key);
 }
 
 /**
@@ -66,6 +91,7 @@ export function invalidateAliases(domain: string): void {
  */
 export function updateCachedAlias(domain: string, id: string, updatedAlias: Alias): boolean {
   const key = makeKey('aliases', domain);
+  advanceRevision(key);
   const entry = store.get(key) as CacheEntry<Alias[]> | undefined;
   if (!entry || Date.now() > entry.expires) return false;
   const list = entry.data;
@@ -82,6 +108,7 @@ export function updateCachedAlias(domain: string, id: string, updatedAlias: Alia
  */
 export function removeCachedAlias(domain: string, id: string): boolean {
   const key = makeKey('aliases', domain);
+  advanceRevision(key);
   const entry = store.get(key) as CacheEntry<Alias[]> | undefined;
   if (!entry || Date.now() > entry.expires) return false;
   const list = entry.data;
@@ -102,11 +129,32 @@ export function setCachedSieveScripts(domain: string, aliasId: string, data: Sie
   set(makeKey('sieve', domain, aliasId), data, ALIAS_TTL);
 }
 
+export function getSieveScriptsRevision(domain: string, aliasId: string): number {
+  return revision(makeKey('sieve', domain, aliasId));
+}
+
+export function setCachedSieveScriptsIfCurrent(
+  domain: string,
+  aliasId: string,
+  data: SieveScript[],
+  expectedRevision: number,
+): boolean {
+  const key = makeKey('sieve', domain, aliasId);
+  if (revision(key) !== expectedRevision) return false;
+  setCachedSieveScripts(domain, aliasId, data);
+  return true;
+}
+
 export function invalidateSieveScripts(domain: string, aliasId: string): void {
-  invalidate(makeKey('sieve', domain, aliasId));
+  const key = makeKey('sieve', domain, aliasId);
+  advanceRevision(key);
+  invalidate(key);
 }
 
 /** Invalidate all caches. */
 export function invalidateAll(): void {
+  for (const key of store.keys()) {
+    advanceRevision(key);
+  }
   store.clear();
 }

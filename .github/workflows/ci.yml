@@ -47,5 +47,5 @@ jobs:
       - name: Upload XPI artifact
         uses: actions/upload-artifact@v4
         with:
-          name: forwardemail-xpi
-          path: forwardemail.xpi
+          name: forwardmailbuddy-xpi
+          path: forwardmailbuddy.xpi

@@ -45,7 +45,7 @@ Manage your [ForwardEmail](https://forwardemail.net) aliases directly from Thund
 5. Select `dist/manifest.json`
 6. The extension icon appears in the toolbar
 
-> **Note**: If Thunderbird is installed via Flatpak, run `bun run package` and load `forwardemail.xpi` instead, because the Flatpak sandbox only grants access to the single file selected through the file picker.
+> **Note**: If Thunderbird is installed via Flatpak, run `bun run package` and load `forwardmailbuddy.xpi` instead, because the Flatpak sandbox only grants access to the single file selected through the file picker.
 
 ### Permanent Installation (when published)
 
@@ -57,6 +57,8 @@ Install from Thunderbird Add-ons (ATN) — not yet published.
 2. Paste your API token
 3. Click **Test Connection** to verify
 4. Click **Save**
+
+Use **Disconnect** in Settings to remove the locally saved credentials and selected-domain context. This does not revoke the token at ForwardEmail; revoke it from the [ForwardEmail Security page](https://forwardemail.net/my-account/security) if needed. **Clear History** separately removes the local audit history.
 
 ## Usage
 
@@ -100,7 +102,7 @@ bun run build            # Compile TypeScript into dist/
 bun run build:watch      # Watch mode
 bun run lint             # Lint source files
 bun run test             # Run tests (compiles into .test-dist/)
-bun run package          # Build + create forwardemail.xpi
+bun run package          # Build + create forwardmailbuddy.xpi
 bun run package:source   # Create source zip for ATN review
 ```
 

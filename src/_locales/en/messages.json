@@ -16,8 +16,8 @@
     "description": "Collapsible instructions header"
   },
   "setupStep1": {
-    "message": "Go to forwardemail.net/my-account/security",
-    "description": "Setup step 1"
+    "message": "Go to ",
+    "description": "Setup step 1 prefix before the security page link"
   },
   "setupStep2": {
     "message": "Scroll to the \"API Tokens\" section",
@@ -498,5 +498,183 @@
   "btnRemoveCondition": {
     "message": "Remove",
     "description": "Button to remove a condition row"
+  },
+  "tooltipSettings": {
+    "message": "Settings",
+    "description": "Tooltip for the popup settings button"
+  },
+  "btnDeleteAlias": {
+    "message": "Delete Alias",
+    "description": "Button to delete an alias"
+  },
+  "btnDeleteScript": {
+    "message": "Delete Script",
+    "description": "Button to delete a Sieve script"
+  },
+  "titleDeleteAlias": {
+    "message": "Delete Alias",
+    "description": "Alias deletion dialog title"
+  },
+  "titleDeleteScript": {
+    "message": "Delete Script",
+    "description": "Sieve script deletion dialog title"
+  },
+  "errorDomainRequired": {
+    "message": "Choose a domain before creating an alias.",
+    "description": "Error when alias creation has no valid domain"
+  },
+  "msgDisplayPartialMatches": {
+    "message": "Some domains could not be checked. Results may be incomplete.",
+    "description": "Warning when alias checks partially fail but include matches"
+  },
+  "msgDisplayPartialNoMatch": {
+    "message": "Alias checks could not be completed. No match can be confirmed.",
+    "description": "Warning when all checked domains have no match but some checks failed"
+  },
+  "badgeIncomplete": {
+    "message": "Alias check incomplete",
+    "description": "Badge warning when a message alias check is incomplete"
+  },
+  "badgeMatchesIncomplete": {
+    "message": "$1 aliases matched — incomplete",
+    "description": "Badge summary when matches were found but checks were incomplete"
+  },
+  "tooltipToggleToken": {
+    "message": "Show or hide API token",
+    "description": "Tooltip and accessible label for token visibility control"
+  },
+  "labelDemoMode": {
+    "message": "Demo Mode",
+    "description": "Demo mode setting label"
+  },
+  "hintDemoMode": {
+    "message": "Shows dummy data instead of real aliases. Useful for screenshots.",
+    "description": "Demo mode explanation"
+  },
+  "titleAccountControls": {
+    "message": "Account",
+    "description": "Settings account controls heading"
+  },
+  "btnDisconnect": {
+    "message": "Disconnect",
+    "description": "Button to remove saved local credentials"
+  },
+  "titleActivityHistory": {
+    "message": "Activity History",
+    "description": "Heading for local activity history"
+  },
+  "hintActivityHistory": {
+    "message": "Recent activity stored on this device. It never includes tokens or generated passwords.",
+    "description": "Activity history privacy explanation"
+  },
+  "activityHistoryEmpty": {
+    "message": "No recent activity.",
+    "description": "Empty activity history message"
+  },
+  "btnClearHistory": {
+    "message": "Clear History",
+    "description": "Button to remove local activity history"
+  },
+  "titleDisconnect": {
+    "message": "Disconnect account",
+    "description": "Disconnect confirmation dialog title"
+  },
+  "confirmDisconnect": {
+    "message": "Remove the saved API token and account information from this device?",
+    "description": "Disconnect confirmation text"
+  },
+  "disconnectSuccess": {
+    "message": "Disconnected.",
+    "description": "Success message after local credential removal"
+  },
+  "historyCleared": {
+    "message": "Activity history cleared.",
+    "description": "Success message after clearing activity history"
+  },
+  "auditActionCredentialsSaved": {
+    "message": "Credentials saved",
+    "description": "Activity action label"
+  },
+  "auditActionCredentialsRemoved": {
+    "message": "Credentials removed",
+    "description": "Activity action label"
+  },
+  "auditActionAliasCreated": {
+    "message": "Alias created",
+    "description": "Activity action label"
+  },
+  "auditActionAliasUpdated": {
+    "message": "Alias updated",
+    "description": "Activity action label"
+  },
+  "auditActionAliasDeleted": {
+    "message": "Alias deleted",
+    "description": "Activity action label"
+  },
+  "auditActionPasswordGenerated": {
+    "message": "Password generated",
+    "description": "Activity action label"
+  },
+  "auditActionSieveCreated": {
+    "message": "Sieve script created",
+    "description": "Activity action label"
+  },
+  "auditActionSieveUpdated": {
+    "message": "Sieve script updated",
+    "description": "Activity action label"
+  },
+  "auditActionSieveDeleted": {
+    "message": "Sieve script deleted",
+    "description": "Activity action label"
+  },
+  "auditActionSieveActivated": {
+    "message": "Sieve script activated",
+    "description": "Activity action label"
+  },
+  "auditActionUnknown": {
+    "message": "Account activity",
+    "description": "Fallback activity action label"
+  },
+  "auditStatusSuccess": {
+    "message": "Successful",
+    "description": "Activity success status"
+  },
+  "auditStatusFailure": {
+    "message": "Failed",
+    "description": "Activity failure status"
+  },
+  "auditErrorAuthentication": {
+    "message": "Authentication error",
+    "description": "Activity error category"
+  },
+  "auditErrorNetwork": {
+    "message": "Network error",
+    "description": "Activity error category"
+  },
+  "auditErrorRateLimited": {
+    "message": "Rate limited",
+    "description": "Activity error category"
+  },
+  "auditErrorRequest": {
+    "message": "Request error",
+    "description": "Activity error category"
+  },
+  "auditErrorServer": {
+    "message": "Server error",
+    "description": "Activity error category"
+  },
+  "auditErrorUnknown": {
+    "message": "Unknown error",
+    "description": "Fallback activity error category"
+  },
+
+  "unexpectedError": {
+    "message": "An unexpected error occurred.",
+    "description": "Fallback message for unexpected background errors"
+  },
+
+  "moreRecipients": {
+    "message": "$1 more",
+    "description": "Suffix indicating additional forwarding recipients"
   }
 }

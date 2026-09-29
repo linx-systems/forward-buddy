@@ -7,6 +7,7 @@ declare namespace browser {
     namespace local {
       function get(keys: string | string[]): Promise<Record<string, unknown>>;
       function set(items: Record<string, unknown>): Promise<void>;
+      function remove(keys: string | string[]): Promise<void>;
     }
   }
 
@@ -42,13 +43,17 @@ declare namespace browser {
       folder?: { accountId: string; path: string };
     }
 
+    interface MessageList {
+      messages: MessageHeader[];
+    }
+
     const onMessagesDisplayed: {
       addListener(
-        callback: (tab: tabs.Tab, messages: any) => void
+        callback: (tab: tabs.Tab, messages: MessageHeader[] | MessageList) => void
       ): void;
     };
 
-    function getDisplayedMessages(tabId: number): Promise<any>;
+    function getDisplayedMessages(tabId: number): Promise<MessageHeader[] | MessageList>;
   }
 
   namespace messageDisplayAction {

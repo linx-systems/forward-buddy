@@ -124,6 +124,17 @@ body {
   text-align: center;
   padding: 12px 0;
 }
+
+.partial-warning {
+  background: var(--warning-bg, #fff4ce);
+  border: 1px solid var(--warning, #9a6700);
+  border-radius: 4px;
+  color: var(--warning, #7a4f01);
+  font-size: 13px;
+  line-height: 1.35;
+  margin-bottom: 12px;
+  padding: 8px 10px;
+}
 .error-text {
   color: var(--error);
   background: var(--error-bg);

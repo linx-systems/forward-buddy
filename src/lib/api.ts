@@ -24,10 +24,14 @@ function authHeader(token: string): string {
   return 'Basic ' + btoa(token + ':');
 }
 
-async function requestResponse(token: string, method: string, path: string, body?: unknown): Promise<Response> {
+interface JsonResponse<T> {
+  data: T;
+  headers: Headers;
+}
+
+async function requestJson<T>(token: string, method: string, path: string, body?: unknown): Promise<JsonResponse<T>> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
-
   const opts: RequestInit = {
     method,
     signal: controller.signal,
@@ -42,62 +46,71 @@ async function requestResponse(token: string, method: string, path: string, body
     opts.body = JSON.stringify(body);
   }
 
-  let res: Response;
   try {
-    res = await fetch(BASE_URL + path, opts);
+    const response = await fetch(BASE_URL + path, opts);
+    if (response.status === 204) {
+      return { data: null as T, headers: response.headers };
+    }
+
+    let payload: unknown;
+    try {
+      payload = await response.json();
+    } catch {
+      if (!response.ok) {
+        throw new ApiError(response.statusText, response.status);
+      }
+      throw new ApiError('Invalid JSON response', response.status);
+    }
+
+    if (!response.ok) {
+      const message = typeof payload === 'object' && payload !== null && 'message' in payload
+        && typeof payload.message === 'string'
+        ? payload.message
+        : response.statusText;
+      throw new ApiError(message, response.status);
+    }
+
+    return { data: payload as T, headers: response.headers };
   } catch (err) {
-    if (err instanceof DOMException && err.name === 'AbortError') {
+    if (err instanceof ApiError) throw err;
+    if (controller.signal.aborted || (err instanceof Error && err.name === 'AbortError')) {
       throw new ApiError('Request timed out', 0);
     }
-    throw err;
+    throw new ApiError('Network request failed', 0);
   } finally {
     clearTimeout(timeout);
   }
-
-  if (!res.ok) {
-    let message: string;
-    try {
-      const json = await res.json();
-      message = json.message || res.statusText;
-    } catch {
-      message = res.statusText;
-    }
-    throw new ApiError(message, res.status);
-  }
-
-  return res;
 }
 
-async function request(token: string, method: string, path: string, body?: unknown): Promise<any> {
-  const res = await requestResponse(token, method, path, body);
-
-  if (res.status === 204) return null;
-
-  return res.json();
+async function request<T>(token: string, method: string, path: string, body?: unknown): Promise<T> {
+  return (await requestJson<T>(token, method, path, body)).data;
 }
 
 async function requestAllPages<T>(token: string, path: string): Promise<T[]> {
   const items: T[] = [];
-  let page = 1;
 
-  while (page <= MAX_PAGES) {
+  for (let page = 1; page <= MAX_PAGES; page += 1) {
     const joiner = path.includes('?') ? '&' : '?';
-    const res = await requestResponse(token, 'GET', `${path}${joiner}page=${page}&limit=${LIST_LIMIT}`);
-    const data = await res.json() as T[];
+    const { data, headers } = await requestJson<T[]>(
+      token,
+      'GET',
+      `${path}${joiner}page=${page}&limit=${LIST_LIMIT}`,
+    );
     items.push(...data);
 
-    const pageCountHeader = res.headers.get('X-Page-Count');
+    const pageCountHeader = headers.get('X-Page-Count');
     if (pageCountHeader) {
       const pageCount = Number.parseInt(pageCountHeader, 10);
-      if (Number.isFinite(pageCount) && page >= pageCount) break;
+      if (Number.isFinite(pageCount) && page >= pageCount) return items;
+      if (Number.isFinite(pageCount) && page === MAX_PAGES && pageCount > MAX_PAGES) {
+        throw new ApiError('Pagination limit reached', 0);
+      }
     } else if (data.length < LIST_LIMIT) {
-      break;
+      return items;
     }
-
-    page += 1;
   }
 
-  return items;
+  throw new ApiError('Pagination limit reached', 0);
 }
 
 /**

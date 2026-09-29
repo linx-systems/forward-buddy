@@ -1,6 +1,6 @@
 # Privacy Policy — ForwardMail Buddy
 
-**Last updated:** 2026-03-08
+**Last updated:** 2026-09-29
 
 ## Overview
 
@@ -14,7 +14,16 @@ The extension does **not** collect, store, or transmit any data to the extension
 
 The following data is stored locally in Thunderbird's extension storage (`browser.storage.local`):
 
-- **API token** — Your ForwardEmail API token, entered manually by you in the settings page. This is stored locally and never shared with anyone other than the ForwardEmail API.
+| Data | Purpose | Removal |
+|---|---|---|
+| **`apiToken`** | Authenticates direct requests to the ForwardEmail API. | **Disconnect** removes it locally. You must revoke the token from ForwardEmail separately if you no longer want it to be valid. |
+| **`accountEmail`** | Identifies the connected ForwardEmail account in the extension UI. | **Disconnect** removes it. |
+| **`accountPlan`** | Displays the connected account's plan in the extension UI. | **Disconnect** removes it. |
+| **`lastDomain`** | Restores the most recently selected domain. | **Disconnect** removes it. |
+| **Demo Mode setting** | Remembers whether the optional in-memory demo experience is enabled after the extension background process restarts. | Turn off Demo Mode in Settings, or remove the extension. |
+| **Bounded audit history** | Records significant extension actions and outcomes so you can review local activity and failures. The history is size-limited. | **Clear History** removes it. Disconnect does not remove it. |
+
+Audit history intentionally excludes API tokens, generated passwords, alias recipients, raw Sieve content, and raw API payloads.
 
 ## Data Transmitted to ForwardEmail
 
@@ -43,8 +52,10 @@ The extension uses the `messagesRead` permission solely to read the recipient ad
 
 ## Your Control
 
-- You can revoke access at any time by removing your API token from the extension settings or uninstalling the extension.
-- Removing the extension deletes all locally stored data.
+- **Disconnect** in Settings removes the locally stored API token, account email, account plan, and selected-domain context. It also invalidates the extension's account caches.
+- **Clear History** in Settings removes the bounded local audit history without disconnecting your account.
+- Disconnecting removes only this extension's local credentials; it does **not** revoke the API token at ForwardEmail. To revoke the token, use the [ForwardEmail Security page](https://forwardemail.net/my-account/security).
+- You can also uninstall the extension, which deletes all locally stored extension data.
 
 ## Changes
 

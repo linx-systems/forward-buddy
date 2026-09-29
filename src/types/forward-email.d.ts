@@ -59,3 +59,45 @@ export interface PasswordResult {
   generated_password?: string;
   [key: string]: unknown;
 }
+
+export type AuditAction =
+  | 'credentials_saved'
+  | 'credentials_removed'
+  | 'alias_created'
+  | 'alias_updated'
+  | 'alias_deleted'
+  | 'password_generated'
+  | 'sieve_created'
+  | 'sieve_updated'
+  | 'sieve_deleted'
+  | 'sieve_activated';
+
+export type AuditStatus = 'success' | 'failure';
+
+export type AuditErrorCategory =
+  | 'authentication'
+  | 'network'
+  | 'rate_limited'
+  | 'request'
+  | 'server';
+
+export interface AuditEvent {
+  id: string;
+  timestamp: string;
+  action: AuditAction;
+  status: AuditStatus;
+  target: string;
+  statusCode?: number;
+  errorCategory?: AuditErrorCategory;
+}
+
+export interface AliasMatch {
+  address: string;
+  alias: Alias;
+  domain: string;
+}
+
+export interface AliasMatchResult {
+  matches: AliasMatch[];
+  failedDomains: string[];
+}

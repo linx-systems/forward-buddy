@@ -12,12 +12,18 @@ interface AliasMatch {
   domain: string;
 }
 
+interface MatchAliasesResult {
+  matches: AliasMatch[];
+  failedDomains: string[];
+}
+
 const viewLoading = document.getElementById('view-loading')!;
 const viewResults = document.getElementById('view-results')!;
 const viewNoMatch = document.getElementById('view-no-match')!;
 const viewError = document.getElementById('view-error')!;
 const matchList = document.getElementById('match-list')!;
 const errorText = document.getElementById('error-text')!;
+const partialWarning = document.getElementById('partial-warning')!;
 
 function showView(view: HTMLElement): void {
   viewLoading.classList.add('hidden');
@@ -270,8 +276,8 @@ async function init(): Promise<void> {
       return;
     }
 
-    const result: any = await browser.messageDisplay.getDisplayedMessages(tabId);
-    const messages: any[] = Array.isArray(result) ? result : result?.messages ?? [];
+    const displayedResult = await browser.messageDisplay.getDisplayedMessages(tabId);
+    const messages = Array.isArray(displayedResult) ? displayedResult : displayedResult.messages;
     if (messages.length === 0) {
       showView(viewNoMatch);
       return;
@@ -296,10 +302,21 @@ async function init(): Promise<void> {
       return;
     }
 
-    const matches: AliasMatch[] = response.data;
-    if (!matches || matches.length === 0) {
-      showView(viewNoMatch);
+    const matchResult = response.data as MatchAliasesResult;
+    const matches = Array.isArray(matchResult?.matches) ? matchResult.matches : [];
+    const failedDomains = Array.isArray(matchResult?.failedDomains) ? matchResult.failedDomains : [];
+    if (matches.length === 0) {
+      if (failedDomains.length > 0) {
+        errorText.textContent = t('msgDisplayPartialNoMatch', 'Alias checks could not be completed. No match can be confirmed.');
+        showView(viewError);
+      } else {
+        showView(viewNoMatch);
+      }
     } else {
+      partialWarning.textContent = failedDomains.length > 0
+        ? t('msgDisplayPartialMatches', 'Some domains could not be checked. Results may be incomplete.')
+        : '';
+      partialWarning.classList.toggle('hidden', failedDomains.length === 0);
       renderMatches(matches);
       showView(viewResults);
     }

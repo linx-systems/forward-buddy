@@ -1,4 +1,4 @@
-import type { Alias, Account, PasswordResult, SieveScript } from './forward-email.js';
+import type { Alias, SieveScript } from './forward-email.js';
 
 export type MessageType =
   | { type: 'testConnection'; token: string }
@@ -11,6 +11,10 @@ export type MessageType =
   | { type: 'matchAliases'; addresses: string[] }
   | { type: 'setDemoMode'; enabled: boolean }
   | { type: 'getDemoMode' }
+  | { type: 'saveCredentials'; token: string; email: string; plan: string }
+  | { type: 'removeCredentials' }
+  | { type: 'getAuditEvents' }
+  | { type: 'clearAuditEvents' }
   | { type: 'getSieveScripts'; domain: string; aliasId: string }
   | { type: 'getSieveScript'; domain: string; aliasId: string; scriptId: string }
   | { type: 'createSieveScript'; domain: string; aliasId: string; data: Partial<SieveScript> }

@@ -4,14 +4,13 @@
  */
 
 import * as api from '../lib/api.js';
+import * as audit from '../lib/audit.js';
 import * as cache from '../lib/cache.js';
-import { parseEmailAddress, matchesAlias, aliasPriority } from '../lib/utils.js';
-import type { Alias } from '../types/forward-email.js';
+import { aliasPriority, parseEmailAddress } from '../lib/utils.js';
+import { matchesAliasSafely } from '../lib/safe-regex.js';
+import type { Alias, AliasMatch, AliasMatchResult, AuditAction, SieveScript } from '../types/forward-email.js';
 import type { MessageType } from '../types/messages.js';
-import type { SieveScript } from '../types/forward-email.js';
 import { DEMO_DOMAINS, DEMO_ALIASES, DEMO_SIEVE_SCRIPTS } from '../lib/demo-data.js';
-
-let demoMode = false;
 
 const demoHandlers: Record<string, (msg: any) => Promise<unknown>> = {
   async testConnection() {
@@ -50,7 +49,7 @@ const demoHandlers: Record<string, (msg: any) => Promise<unknown>> = {
   async generatePassword() {
     return { generated_password: 'demo-p4ssw0rd-x7k9m2' };
   },
-  async matchAliases() { return []; },
+  async matchAliases() { return { matches: [], failedDomains: [] }; },
   async getSieveScripts({ domain, aliasId }: { domain: string; aliasId: string }) {
     return DEMO_SIEVE_SCRIPTS[`${domain}:${aliasId}`] ?? [];
   },
@@ -96,6 +95,11 @@ const demoHandlers: Record<string, (msg: any) => Promise<unknown>> = {
   },
 };
 
+interface ActiveAuth {
+  token: string;
+  generation: number;
+}
+
 async function getToken(): Promise<string> {
   const { apiToken } = await browser.storage.local.get('apiToken');
   if (!apiToken) throw new Error('No API token configured');
@@ -103,165 +107,188 @@ async function getToken(): Promise<string> {
 }
 
 let currentToken: string | null = null;
+let authGeneration = 0;
 
-async function getActiveToken(): Promise<string> {
+function resetAccountCaches(): void {
+  currentToken = null;
+  authGeneration += 1;
+  cache.invalidateAll();
+}
+
+async function getActiveAuth(): Promise<ActiveAuth> {
   const token = await getToken();
   if (currentToken !== token) {
-    cache.invalidateAll();
     currentToken = token;
+    authGeneration += 1;
+    cache.invalidateAll();
   }
-  return token;
+  return { token, generation: authGeneration };
+}
+
+function isCurrentAuth(auth: ActiveAuth): boolean {
+  return currentToken === auth.token && authGeneration === auth.generation;
+}
+
+function aliasTarget(domain: string, id: string): string {
+  return `domain/${domain}/alias/${id}`;
+}
+
+function sieveTarget(domain: string, aliasId: string, scriptId?: string): string {
+  const base = `${aliasTarget(domain, aliasId)}/sieve`;
+  return scriptId ? `${base}/${scriptId}` : base;
 }
 
 const handlers: Record<string, (msg: any) => Promise<unknown>> = {
   async testConnection({ token }: { token: string }) {
-    const account = await api.getAccount(token);
-    return account;
+    return api.getAccount(token);
   },
 
   async getDomains() {
-    const token = await getActiveToken();
+    const auth = await getActiveAuth();
     const cached = cache.getCachedDomains();
     if (cached) return cached;
-    const data = await api.getDomains(token);
-    cache.setCachedDomains(data);
+    const data = await api.getDomains(auth.token);
+    if (isCurrentAuth(auth)) cache.setCachedDomains(data);
     return data;
   },
 
   async getAliases({ domain }: { domain: string }) {
-    const token = await getActiveToken();
+    const auth = await getActiveAuth();
     const cached = cache.getCachedAliases(domain);
     if (cached) return cached;
-    const data = await api.getAliases(token, domain);
-    cache.setCachedAliases(domain, data);
+    const revision = cache.getAliasesRevision(domain);
+    const data = await api.getAliases(auth.token, domain);
+    if (isCurrentAuth(auth)) cache.setCachedAliasesIfCurrent(domain, data, revision);
     return data;
   },
 
   async createAlias({ domain, data }: { domain: string; data: Record<string, unknown> }) {
-    const token = await getActiveToken();
-    const result = await api.createAlias(token, domain, data);
-    cache.invalidateAliases(domain);
+    const auth = await getActiveAuth();
+    const result = await api.createAlias(auth.token, domain, data);
+    if (isCurrentAuth(auth)) cache.invalidateAliases(domain);
     return result;
   },
 
   async updateAlias({ domain, id, data }: { domain: string; id: string; data: Record<string, unknown> }) {
-    const token = await getActiveToken();
-    const result = await api.updateAlias(token, domain, id, data);
+    const auth = await getActiveAuth();
+    const result = await api.updateAlias(auth.token, domain, id, data);
+    if (!isCurrentAuth(auth)) return result;
     if (!cache.updateCachedAlias(domain, id, result)) {
-      // Cache expired or alias not found — refetch and cache fresh data
-      // so the next popup open sees the correct state
-      const fresh = await api.getAliases(token, domain);
-      cache.setCachedAliases(domain, fresh);
+      const revision = cache.getAliasesRevision(domain);
+      try {
+        const fresh = await api.getAliases(auth.token, domain);
+        if (isCurrentAuth(auth)) cache.setCachedAliasesIfCurrent(domain, fresh, revision);
+      } catch {
+        if (isCurrentAuth(auth)) cache.invalidateAliases(domain);
+      }
     }
     return result;
   },
 
   async deleteAlias({ domain, id }: { domain: string; id: string }) {
-    const token = await getActiveToken();
-    await api.deleteAlias(token, domain, id);
-    if (!cache.removeCachedAlias(domain, id)) {
+    const auth = await getActiveAuth();
+    await api.deleteAlias(auth.token, domain, id);
+    if (isCurrentAuth(auth) && !cache.removeCachedAlias(domain, id)) {
       cache.invalidateAliases(domain);
     }
     return { ok: true };
   },
 
   async generatePassword({ domain, id }: { domain: string; id: string }) {
-    const token = await getActiveToken();
-    return api.generatePassword(token, domain, id);
+    const auth = await getActiveAuth();
+    return api.generatePassword(auth.token, domain, id);
   },
 
   async getSieveScripts({ domain, aliasId }: { domain: string; aliasId: string }) {
-    const token = await getActiveToken();
+    const auth = await getActiveAuth();
     const cached = cache.getCachedSieveScripts(domain, aliasId);
     if (cached) return cached;
-    const data = await api.getSieveScripts(token, domain, aliasId);
-    cache.setCachedSieveScripts(domain, aliasId, data);
+    const revision = cache.getSieveScriptsRevision(domain, aliasId);
+    const data = await api.getSieveScripts(auth.token, domain, aliasId);
+    if (isCurrentAuth(auth)) cache.setCachedSieveScriptsIfCurrent(domain, aliasId, data, revision);
     return data;
   },
 
   async getSieveScript({ domain, aliasId, scriptId }: { domain: string; aliasId: string; scriptId: string }) {
-    const token = await getActiveToken();
-    return api.getSieveScript(token, domain, aliasId, scriptId);
+    const auth = await getActiveAuth();
+    return api.getSieveScript(auth.token, domain, aliasId, scriptId);
   },
 
   async createSieveScript({ domain, aliasId, data }: { domain: string; aliasId: string; data: Partial<SieveScript> }) {
-    const token = await getActiveToken();
-    const result = await api.createSieveScript(token, domain, aliasId, data);
-    cache.invalidateSieveScripts(domain, aliasId);
+    const auth = await getActiveAuth();
+    const result = await api.createSieveScript(auth.token, domain, aliasId, data);
+    if (isCurrentAuth(auth)) cache.invalidateSieveScripts(domain, aliasId);
     return result;
   },
 
   async updateSieveScript({ domain, aliasId, scriptId, data }: { domain: string; aliasId: string; scriptId: string; data: Partial<SieveScript> }) {
-    const token = await getActiveToken();
-    const result = await api.updateSieveScript(token, domain, aliasId, scriptId, data);
-    cache.invalidateSieveScripts(domain, aliasId);
+    const auth = await getActiveAuth();
+    const result = await api.updateSieveScript(auth.token, domain, aliasId, scriptId, data);
+    if (isCurrentAuth(auth)) cache.invalidateSieveScripts(domain, aliasId);
     return result;
   },
 
   async deleteSieveScript({ domain, aliasId, scriptId }: { domain: string; aliasId: string; scriptId: string }) {
-    const token = await getActiveToken();
-    await api.deleteSieveScript(token, domain, aliasId, scriptId);
-    cache.invalidateSieveScripts(domain, aliasId);
+    const auth = await getActiveAuth();
+    await api.deleteSieveScript(auth.token, domain, aliasId, scriptId);
+    if (isCurrentAuth(auth)) cache.invalidateSieveScripts(domain, aliasId);
     return { ok: true };
   },
 
   async activateSieveScript({ domain, aliasId, scriptId }: { domain: string; aliasId: string; scriptId: string }) {
-    const token = await getActiveToken();
-    const result = await api.activateSieveScript(token, domain, aliasId, scriptId);
-    cache.invalidateSieveScripts(domain, aliasId);
+    const auth = await getActiveAuth();
+    const result = await api.activateSieveScript(auth.token, domain, aliasId, scriptId);
+    if (isCurrentAuth(auth)) cache.invalidateSieveScripts(domain, aliasId);
     return result;
   },
 
-  async matchAliases({ addresses }: { addresses: string[] }) {
-    const token = await getActiveToken();
-
+  async matchAliases({ addresses }: { addresses: string[] }): Promise<AliasMatchResult> {
+    const auth = await getActiveAuth();
     let domains = cache.getCachedDomains();
     if (!domains) {
-      domains = await api.getDomains(token);
-      cache.setCachedDomains(domains);
+      domains = await api.getDomains(auth.token);
+      if (isCurrentAuth(auth)) cache.setCachedDomains(domains);
     }
 
-    const domainNames = domains.map((d: { name: string }) => d.name.toLowerCase());
-    const ownedDomains = new Set(domainNames);
-    const matches: { address: string; alias: Alias; domain: string }[] = [];
+    const ownedDomains = new Set(domains.map((domain) => domain.name.toLowerCase()));
+    const matches: AliasMatch[] = [];
     const parsedAddresses = addresses
       .map((address) => ({ address, parsed: parseEmailAddress(address) }))
       .filter((entry): entry is { address: string; parsed: { local: string; domain: string } } =>
         entry.parsed !== null && ownedDomains.has(entry.parsed.domain));
-
     const relevantDomains = [...new Set(parsedAddresses.map((entry) => entry.parsed.domain))];
-
     const aliasesByDomain = new Map<string, Alias[]>();
+    const failedDomains: string[] = [];
+
     for (const domainName of relevantDomains) {
       try {
         let aliases = cache.getCachedAliases(domainName);
         if (!aliases) {
-          aliases = await api.getAliases(token, domainName);
-          cache.setCachedAliases(domainName, aliases);
+          const revision = cache.getAliasesRevision(domainName);
+          aliases = await api.getAliases(auth.token, domainName);
+          if (isCurrentAuth(auth)) cache.setCachedAliasesIfCurrent(domainName, aliases, revision);
         }
         aliasesByDomain.set(domainName, aliases);
       } catch {
-        // Skip domains that fail to load so one error does not hide other matches.
+        failedDomains.push(domainName);
       }
     }
 
     for (const { address, parsed } of parsedAddresses) {
       const aliases = aliasesByDomain.get(parsed.domain);
       if (!aliases) continue;
-
       const sorted = [...aliases].sort((a, b) => aliasPriority(a.name) - aliasPriority(b.name));
       for (const alias of sorted) {
-        if (matchesAlias(parsed.local, parsed.domain, alias, parsed.domain)) {
+        if (await matchesAliasSafely(parsed.local, parsed.domain, alias, parsed.domain)) {
           matches.push({ address, alias, domain: parsed.domain });
           break;
         }
       }
     }
 
-    return matches;
+    return { matches, failedDomains };
   },
 };
-
 // Update badge when a message is displayed
 const badgeRequestIds = new Map<number, number>();
 
@@ -286,26 +313,39 @@ browser.messageDisplay.onMessagesDisplayed.addListener(
         return;
       }
 
-      const matches = await handlers.matchAliases({ addresses }) as {
-        address: string; alias: Alias; domain: string;
-      }[];
+      const { demoMode } = await browser.storage.local.get('demoMode');
+      const matcher = demoMode === true ? demoHandlers.matchAliases : handlers.matchAliases;
+      const result = await matcher({ addresses }) as AliasMatchResult;
 
       // Discard stale result if a newer request arrived for this tab
       if (badgeRequestIds.get(tabId) !== requestId) return;
 
+      const { matches, failedDomains } = result;
+      const incomplete = failedDomains.length > 0;
       if (matches.length > 0) {
         const uniqueMatches = new Map(matches.map((match) => [`${match.domain}:${match.alias.id}`, match]));
         await browser.messageDisplayAction.setBadgeText({
           text: String(uniqueMatches.size), tabId,
         });
         await browser.messageDisplayAction.setBadgeBackgroundColor({
-          color: '#10b981', tabId,
+          color: incomplete ? '#f59e0b' : '#10b981', tabId,
         });
-        const firstMatch = uniqueMatches.values().next().value as typeof matches[number];
+        const firstMatch = uniqueMatches.values().next().value as AliasMatch;
         const title = uniqueMatches.size === 1
           ? `Alias: ${firstMatch.alias.name}@${firstMatch.domain}`
           : `${uniqueMatches.size} aliases matched`;
-        await browser.messageDisplayAction.setTitle({ title, tabId });
+        const incompleteTitle = browser.i18n.getMessage('badgeIncomplete');
+        await browser.messageDisplayAction.setTitle({
+          title: incomplete ? `${title} — ${incompleteTitle}` : title,
+          tabId,
+        });
+      } else if (incomplete) {
+        await browser.messageDisplayAction.setBadgeText({ text: '?', tabId });
+        await browser.messageDisplayAction.setBadgeBackgroundColor({ color: '#f59e0b', tabId });
+        await browser.messageDisplayAction.setTitle({
+          title: browser.i18n.getMessage('badgeIncomplete'),
+          tabId,
+        });
       } else {
         await browser.messageDisplayAction.setBadgeText({ text: null, tabId });
         await browser.messageDisplayAction.setTitle({ title: null, tabId });
@@ -318,19 +358,91 @@ browser.messageDisplay.onMessagesDisplayed.addListener(
   }
 );
 
-browser.runtime.onMessage.addListener((msg: MessageType, _sender: unknown) => {
+function auditDetails(msg: MessageType): { action: AuditAction; target: string } | null {
+  switch (msg.type) {
+    case 'createAlias':
+      return { action: 'alias_created', target: `domain/${msg.domain}/aliases` };
+    case 'updateAlias':
+      return { action: 'alias_updated', target: aliasTarget(msg.domain, msg.id) };
+    case 'deleteAlias':
+      return { action: 'alias_deleted', target: aliasTarget(msg.domain, msg.id) };
+    case 'generatePassword':
+      return { action: 'password_generated', target: aliasTarget(msg.domain, msg.id) };
+    case 'createSieveScript':
+      return { action: 'sieve_created', target: sieveTarget(msg.domain, msg.aliasId) };
+    case 'updateSieveScript':
+      return { action: 'sieve_updated', target: sieveTarget(msg.domain, msg.aliasId, msg.scriptId) };
+    case 'deleteSieveScript':
+      return { action: 'sieve_deleted', target: sieveTarget(msg.domain, msg.aliasId, msg.scriptId) };
+    case 'activateSieveScript':
+      return { action: 'sieve_activated', target: sieveTarget(msg.domain, msg.aliasId, msg.scriptId) };
+    default:
+      return null;
+  }
+}
+
+function errorResponse(error: unknown): { error: string; status?: number } {
+  if (error instanceof Error) {
+    const status = typeof error === 'object' && 'status' in error && typeof error.status === 'number'
+      ? error.status
+      : undefined;
+    return { error: error.message, ...(status === undefined ? {} : { status }) };
+  }
+  return { error: browser.i18n.getMessage('unexpectedError') };
+}
+
+browser.runtime.onMessage.addListener(async (msg: MessageType, _sender: unknown) => {
   if (msg.type === 'setDemoMode') {
-    demoMode = (msg as any).enabled;
-    return Promise.resolve({ data: { demoMode } });
+    await browser.storage.local.set({ demoMode: msg.enabled });
+    return { data: { demoMode: msg.enabled } };
   }
   if (msg.type === 'getDemoMode') {
-    return Promise.resolve({ data: { demoMode } });
+    const { demoMode } = await browser.storage.local.get('demoMode');
+    return { data: { demoMode: demoMode === true } };
+  }
+  if (msg.type === 'saveCredentials') {
+    try {
+      await browser.storage.local.set({
+        apiToken: msg.token,
+        accountEmail: msg.email,
+        accountPlan: msg.plan,
+      });
+      resetAccountCaches();
+      await audit.recordAuditEvent('credentials_saved', 'success', 'credentials').catch(() => {});
+      return { data: { ok: true } };
+    } catch (error) {
+      await audit.recordAuditEvent('credentials_saved', 'failure', 'credentials', error).catch(() => {});
+      return errorResponse(error);
+    }
+  }
+  if (msg.type === 'removeCredentials') {
+    try {
+      await browser.storage.local.remove(['apiToken', 'accountEmail', 'accountPlan', 'lastDomain']);
+      resetAccountCaches();
+      await audit.recordAuditEvent('credentials_removed', 'success', 'credentials').catch(() => {});
+      return { data: { ok: true } };
+    } catch (error) {
+      await audit.recordAuditEvent('credentials_removed', 'failure', 'credentials', error).catch(() => {});
+      return errorResponse(error);
+    }
+  }
+  if (msg.type === 'getAuditEvents') return { data: await audit.getAuditEvents() };
+  if (msg.type === 'clearAuditEvents') {
+    await audit.clearAuditEvents();
+    return { data: { ok: true } };
   }
 
-  const source = demoMode ? demoHandlers : handlers;
+  const { demoMode } = await browser.storage.local.get('demoMode');
+  const source = demoMode === true ? demoHandlers : handlers;
   const handler = source[msg.type];
-  if (!handler) return Promise.resolve({ error: 'Unknown message type' });
-  return handler(msg)
-    .then((data) => ({ data }))
-    .catch((err: Error & { status?: number }) => ({ error: err.message, status: err.status }));
+  if (!handler) return { error: 'Unknown message type' };
+  const details = auditDetails(msg);
+  try {
+    const data = await handler(msg);
+    if (details) await audit.recordAuditEvent(details.action, 'success', details.target).catch(() => {});
+    return { data };
+  } catch (error) {
+    if (details) await audit.recordAuditEvent(details.action, 'failure', details.target, error).catch(() => {});
+    return errorResponse(error);
+  }
 });

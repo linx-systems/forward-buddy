@@ -43,6 +43,14 @@ function applyI18n(): void {
     const msg = browser.i18n.getMessage(el.dataset.i18nPlaceholder!);
     if (msg) el.placeholder = msg;
   }
+  for (const el of document.querySelectorAll<HTMLElement>('[data-i18n-title]')) {
+    const msg = browser.i18n.getMessage(el.dataset.i18nTitle!);
+    if (msg) el.title = msg;
+  }
+  for (const el of document.querySelectorAll<HTMLElement>('[data-i18n-aria-label]')) {
+    const msg = browser.i18n.getMessage(el.dataset.i18nAriaLabel!);
+    if (msg) el.setAttribute('aria-label', msg);
+  }
 }
 
 /* ====== View switching ====== */
@@ -55,6 +63,45 @@ function showView(name: keyof typeof views): void {
 /* ====== Messaging ====== */
 function send(msg: Record<string, unknown>): Promise<MessageResponse> {
   return browser.runtime.sendMessage(msg);
+}
+
+type MutationErrorSurface = 'list' | 'detail' | 'create' | 'sieveList' | 'sieveEdit';
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error && error.message ? error.message : t('errorUnknown', 'An unexpected error occurred.');
+}
+
+function showMutationError(surface: MutationErrorSurface, error: unknown): void {
+  const message = errorMessage(error);
+  switch (surface) {
+    case 'list':
+      showListError(message);
+      break;
+    case 'detail':
+      showMsg('detail-msg', 'error', message);
+      break;
+    case 'create':
+      showMsg('create-msg', 'error', message);
+      break;
+    case 'sieveList':
+      showSieveListError(message);
+      break;
+    case 'sieveEdit':
+      showMsg('sieve-edit-msg', 'error', message);
+      break;
+  }
+}
+
+async function sendMutation(surface: MutationErrorSurface, msg: Record<string, unknown>): Promise<MessageResponse | null> {
+  showGlobalLoading(true);
+  try {
+    return await send(msg);
+  } catch (error) {
+    showMutationError(surface, error);
+    return null;
+  } finally {
+    showGlobalLoading(false);
+  }
 }
 
 /* ====== Init ====== */
@@ -91,8 +138,16 @@ async function init(): Promise<void> {
 
 /* ====== Domains ====== */
 async function loadDomains(): Promise<void> {
-  const res = await send({ type: 'getDomains' });
+  let res: MessageResponse;
+  try {
+    res = await send({ type: 'getDomains' });
+  } catch (error) {
+    setCreateControls(false);
+    showListError(errorMessage(error));
+    return;
+  }
   if (res.error) {
+    setCreateControls(false);
     showListError(res.error);
     return;
   }
@@ -105,6 +160,8 @@ async function loadDomains(): Promise<void> {
     opt.textContent = t('noDomains', 'No domains found');
     opt.disabled = true;
     domainSelect.appendChild(opt);
+    currentDomain = '';
+    setCreateControls(false);
     return;
   }
 
@@ -117,6 +174,11 @@ async function loadDomains(): Promise<void> {
     domainSelect.appendChild(opt);
   }
 
+  if (!domainSelect.value) {
+    setCreateControls(false);
+    return;
+  }
+
   // Restore last selected domain
   const { lastDomain } = await browser.storage.local.get('lastDomain');
   if (lastDomain && domains.some((d) => (d.name || d.domain) === lastDomain)) {
@@ -124,6 +186,7 @@ async function loadDomains(): Promise<void> {
   }
 
   currentDomain = domainSelect.value;
+  setCreateControls(true);
   await loadAliases();
 }
 
@@ -138,7 +201,16 @@ async function loadAliases(): Promise<void> {
   listError.classList.add('hidden');
   aliasList.replaceChildren();
 
-  const res = await send({ type: 'getAliases', domain: requestedDomain });
+  let res: MessageResponse;
+  try {
+    res = await send({ type: 'getAliases', domain: requestedDomain });
+  } catch (error) {
+    if (requestId === aliasLoadRequest && requestedDomain === currentDomain) {
+      listLoading.classList.add('hidden');
+      showListError(errorMessage(error));
+    }
+    return;
+  }
   if (requestId !== aliasLoadRequest || requestedDomain !== currentDomain) return;
 
   listLoading.classList.add('hidden');
@@ -174,10 +246,9 @@ function createAliasItem(alias: Alias): HTMLDivElement {
   item.className = 'alias-item';
   if (alias.is_enabled === false) item.classList.add('alias-disabled');
 
-  // Toggle (stop propagation so click doesn't open detail)
+  // Toggle is a sibling of the detail button, so controls are never nested.
   const toggleWrap = document.createElement('div');
   toggleWrap.className = 'alias-toggle';
-  toggleWrap.addEventListener('click', (e: Event) => e.stopPropagation());
   const toggle = document.createElement('label');
   toggle.className = 'toggle';
   const checkbox = document.createElement('input');
@@ -197,10 +268,12 @@ function createAliasItem(alias: Alias): HTMLDivElement {
   toggleWrap.appendChild(toggle);
 
   // Info section
-  const info = document.createElement('div');
-  info.className = 'alias-info';
+  const info = document.createElement('button');
+  info.type = 'button';
+  info.className = 'alias-info alias-open';
+  info.addEventListener('click', () => openDetail(alias));
 
-  const nameRow = document.createElement('div');
+  const nameRow = document.createElement('span');
   nameRow.className = 'alias-name-row';
   const nameSpan = document.createElement('span');
   nameSpan.className = 'alias-name';
@@ -212,7 +285,7 @@ function createAliasItem(alias: Alias): HTMLDivElement {
   nameRow.appendChild(nameSpan);
   nameRow.appendChild(badge);
 
-  const emailSpan = document.createElement('div');
+  const emailSpan = document.createElement('span');
   emailSpan.className = 'alias-email';
   emailSpan.textContent = formatEmail(name, domain);
 
@@ -220,21 +293,21 @@ function createAliasItem(alias: Alias): HTMLDivElement {
   info.appendChild(emailSpan);
 
   if (visible.length > 0) {
-    const recip = document.createElement('div');
+    const recip = document.createElement('span');
     recip.className = 'alias-recipients';
     let text = visible.join(', ');
-    if (extra > 0) text += ` +${extra} more`;
+    if (extra > 0) text += ` +${browser.i18n.getMessage('moreRecipients').replace('$1', String(extra)) || `${extra} more`}`;
     recip.textContent = '\u2192 ' + text;
     info.appendChild(recip);
   } else if (alias.has_imap) {
-    const imap = document.createElement('div');
+    const imap = document.createElement('span');
     imap.className = 'alias-recipients alias-imap';
     imap.textContent = '\u2192 ' + t('labelImap', 'IMAP Storage');
     info.appendChild(imap);
   }
 
   if (alias.description) {
-    const desc = document.createElement('div');
+    const desc = document.createElement('span');
     desc.className = 'alias-desc';
     desc.textContent = alias.description;
     info.appendChild(desc);
@@ -242,8 +315,6 @@ function createAliasItem(alias: Alias): HTMLDivElement {
 
   item.appendChild(toggleWrap);
   item.appendChild(info);
-
-  item.addEventListener('click', () => openDetail(alias));
 
   return item;
 }
@@ -255,27 +326,23 @@ async function toggleAlias(alias: Alias, checkbox: HTMLInputElement): Promise<vo
   const domain = currentDomain;
 
   checkbox.disabled = true;
-  try {
-    const res = await send({
-      type: 'updateAlias',
-      domain,
-      id: alias.id,
-      data: { is_enabled: enabled },
-    });
-
-    if (res.error) {
-      checkbox.checked = !enabled; // revert
+  const res = await sendMutation('list', {
+    type: 'updateAlias',
+    domain,
+    id: alias.id,
+    data: { is_enabled: enabled },
+  });
+  if (!res || res.error) {
+    checkbox.checked = !enabled;
+    if (res?.error) {
       showListError(friendlyError({ message: res.error, status: res.status }));
-    } else {
-      alias.is_enabled = enabled;
-      checkbox.checked = enabled;
-      checkbox.closest('.alias-item')!.classList.toggle('alias-disabled', !enabled);
     }
-  } catch {
-    checkbox.checked = !enabled; // revert on unexpected error
-  } finally {
-    checkbox.disabled = false;
+  } else {
+    alias.is_enabled = enabled;
+    checkbox.checked = enabled;
+    checkbox.closest('.alias-item')!.classList.toggle('alias-disabled', !enabled);
   }
+  checkbox.disabled = false;
 }
 
 /* ====== Detail view ====== */
@@ -353,9 +420,8 @@ async function saveDetail(): Promise<void> {
     vacation_responder_message: (document.getElementById('detail-vacation-message') as HTMLTextAreaElement).value.trim() || undefined,
   };
 
-  showGlobalLoading(true);
-  const res = await send({ type: 'updateAlias', domain, id: currentAlias.id, data });
-  showGlobalLoading(false);
+  const res = await sendMutation('detail', { type: 'updateAlias', domain, id: currentAlias.id, data });
+  if (!res) return;
 
   if (res.error) {
     showMsg('detail-msg', 'error', friendlyError({ message: res.error, status: res.status }));
@@ -371,9 +437,8 @@ async function generatePassword(): Promise<void> {
   if (!currentAlias) return;
   const domain = currentDomain;
 
-  showGlobalLoading(true);
-  const res = await send({ type: 'generatePassword', domain, id: currentAlias.id });
-  showGlobalLoading(false);
+  const res = await sendMutation('detail', { type: 'generatePassword', domain, id: currentAlias.id });
+  if (!res) return;
 
   if (res.error) {
     showMsg('detail-msg', 'error', friendlyError({ message: res.error, status: res.status }));
@@ -383,7 +448,7 @@ async function generatePassword(): Promise<void> {
   const resData = res.data as Record<string, unknown>;
   const password = (resData?.password || resData?.generated_password || JSON.stringify(res.data)) as string;
   (document.getElementById('modal-password-value') as HTMLInputElement).value = password;
-  document.getElementById('modal-password')!.classList.remove('hidden');
+  openModal('modal-password', 'modal-password-value');
 }
 
 /* ====== Delete alias ====== */
@@ -392,18 +457,16 @@ function confirmDelete(): void {
   const name = currentAlias.name || '';
   const domain = resolveDomain(currentAlias, currentDomain);
   document.getElementById('modal-delete-name')!.textContent = formatEmail(name, domain);
-  document.getElementById('modal-delete')!.classList.remove('hidden');
+  openModal('modal-delete', 'modal-delete-cancel');
 }
 
 async function executeDelete(): Promise<void> {
   if (!currentAlias) return;
   const domain = currentDomain;
 
-  document.getElementById('modal-delete')!.classList.add('hidden');
-  showGlobalLoading(true);
-
-  const res = await send({ type: 'deleteAlias', domain, id: currentAlias.id });
-  showGlobalLoading(false);
+  closeModal('modal-delete');
+  const res = await sendMutation('detail', { type: 'deleteAlias', domain, id: currentAlias.id });
+  if (!res) return;
 
   if (res.error) {
     showMsg('detail-msg', 'error', friendlyError({ message: res.error, status: res.status }));
@@ -416,19 +479,24 @@ async function executeDelete(): Promise<void> {
 
 /* ====== Create alias ====== */
 function openCreate(): void {
+  if (!isKnownDomain(currentDomain)) {
+    showListError(t('errorDomainRequired', 'Choose a domain before creating an alias.'));
+    return;
+  }
   (document.getElementById('create-name') as HTMLInputElement).value = '';
 
   // Populate domain dropdown from the main domain selector
   const createDomain = document.getElementById('create-domain') as HTMLSelectElement;
   createDomain.replaceChildren();
   for (const opt of domainSelect.options) {
-    const clone = opt.cloneNode(true) as HTMLOptionElement;
-    createDomain.appendChild(clone);
+    if (!opt.disabled && opt.value) {
+      createDomain.appendChild(opt.cloneNode(true));
+    }
   }
   createDomain.value = currentDomain;
 
   (document.getElementById('create-recipients') as HTMLTextAreaElement).value = '';
-  (document.getElementById('create-description') as HTMLTextAreaElement).value = '';
+  (document.getElementById('create-description') as HTMLInputElement).value = '';
   (document.getElementById('create-labels') as HTMLInputElement).value = '';
   (document.getElementById('create-imap') as HTMLInputElement).checked = false;
   hideMsg('create-msg');
@@ -451,10 +519,13 @@ async function executeCreate(): Promise<void> {
   };
 
   const createDomain = (document.getElementById('create-domain') as HTMLSelectElement).value;
+  if (!isKnownDomain(createDomain)) {
+    showMsg('create-msg', 'error', t('errorDomainRequired', 'Choose a domain before creating an alias.'));
+    return;
+  }
 
-  showGlobalLoading(true);
-  const res = await send({ type: 'createAlias', domain: createDomain, data });
-  showGlobalLoading(false);
+  const res = await sendMutation('create', { type: 'createAlias', domain: createDomain, data });
+  if (!res) return;
 
   if (res.error) {
     showMsg('create-msg', 'error', friendlyError({ message: res.error, status: res.status }));
@@ -493,6 +564,13 @@ function showListError(msg: string): void {
   listError.classList.remove('hidden');
 }
 
+function showSieveListError(msg: string): void {
+  const sieveError = document.getElementById('sieve-list-error')!;
+  sieveError.textContent = msg;
+  sieveError.className = 'error-msg error';
+  sieveError.classList.remove('hidden');
+}
+
 function showMsg(id: string, type: string, text: string): void {
   const el = document.getElementById(id)!;
   el.className = `msg ${type}`;
@@ -506,6 +584,64 @@ function hideMsg(id: string): void {
 
 function showGlobalLoading(show: boolean): void {
   document.getElementById('global-loading')!.classList.toggle('hidden', !show);
+}
+
+function isKnownDomain(domain: string): boolean {
+  return Array.from(domainSelect.options).some((option) => !option.disabled && option.value === domain);
+}
+
+function setCreateControls(available: boolean): void {
+  for (const button of document.querySelectorAll<HTMLButtonElement>('#btn-new-alias, .btn-create-from-empty')) {
+    button.disabled = !available;
+    button.classList.toggle('hidden', !available);
+  }
+}
+
+const modalTriggers = new Map<string, HTMLElement | null>();
+
+function openModal(id: string, initialFocusId: string): void {
+  const overlay = document.getElementById(id)!;
+  modalTriggers.set(id, document.activeElement instanceof HTMLElement ? document.activeElement : null);
+  overlay.classList.remove('hidden');
+  const initialFocus = document.getElementById(initialFocusId) as HTMLElement;
+  initialFocus.focus();
+  if (initialFocus instanceof HTMLInputElement) initialFocus.select();
+}
+
+function closeModal(id: string): void {
+  const overlay = document.getElementById(id)!;
+  overlay.classList.add('hidden');
+  const trigger = modalTriggers.get(id);
+  if (trigger?.isConnected) trigger.focus();
+  modalTriggers.delete(id);
+}
+
+for (const modal of document.querySelectorAll<HTMLElement>('.modal-overlay')) {
+  modal.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      closeModal(modal.id);
+      return;
+    }
+    if (event.key !== 'Tab') return;
+
+    const focusable = Array.from(modal.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href]',
+    ));
+    if (focusable.length === 0) {
+      event.preventDefault();
+      return;
+    }
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
 }
 
 /* ====== Sieve script management ====== */
@@ -525,13 +661,18 @@ async function openSieveList(): Promise<void> {
   sieveEmpty.classList.add('hidden');
   sieveError.classList.add('hidden');
 
-  const res = await send({ type: 'getSieveScripts', domain, aliasId });
+  let res: MessageResponse;
+  try {
+    res = await send({ type: 'getSieveScripts', domain, aliasId });
+  } catch (error) {
+    sieveLoading.classList.add('hidden');
+    showSieveListError(errorMessage(error));
+    return;
+  }
   sieveLoading.classList.add('hidden');
 
   if (res.error) {
-    sieveError.textContent = friendlyError({ message: res.error, status: res.status });
-    sieveError.className = 'error-msg error';
-    sieveError.classList.remove('hidden');
+    showSieveListError(friendlyError({ message: res.error, status: res.status }));
     return;
   }
 
@@ -593,7 +734,7 @@ function createSieveItem(script: SieveScript): HTMLDivElement {
   deleteBtn.className = 'btn btn-danger';
   deleteBtn.style.width = 'auto';
   deleteBtn.style.marginTop = '0';
-  deleteBtn.textContent = t('btnDelete', 'Delete');
+  deleteBtn.textContent = t('btnDeleteScript', 'Delete Script');
   deleteBtn.addEventListener('click', (e) => { e.stopPropagation(); confirmDeleteSieve(script); });
   actions.appendChild(deleteBtn);
 
@@ -654,14 +795,13 @@ async function saveSieve(): Promise<void> {
     content: (document.getElementById('sieve-content') as HTMLTextAreaElement).value,
   };
 
-  showGlobalLoading(true);
-  let res;
-  if (sieveEditMode === 'edit' && currentSieveScript) {
-    res = await send({ type: 'updateSieveScript', domain, aliasId, scriptId: currentSieveScript.id, data });
-  } else {
-    res = await send({ type: 'createSieveScript', domain, aliasId, data });
-  }
-  showGlobalLoading(false);
+  const res = await sendMutation(
+    'sieveEdit',
+    sieveEditMode === 'edit' && currentSieveScript
+      ? { type: 'updateSieveScript', domain, aliasId, scriptId: currentSieveScript.id, data }
+      : { type: 'createSieveScript', domain, aliasId, data },
+  );
+  if (!res) return;
 
   if (res.error) {
     showMsg('sieve-edit-msg', 'error', friendlyError({ message: res.error, status: res.status }));
@@ -676,12 +816,16 @@ async function activateSieve(script: SieveScript): Promise<void> {
   const domain = currentDomain;
   const aliasId = currentAlias.id;
 
-  showGlobalLoading(true);
-  const res = await send({ type: 'activateSieveScript', domain, aliasId, scriptId: script.id });
-  showGlobalLoading(false);
+  const res = await sendMutation('sieveList', {
+    type: 'activateSieveScript',
+    domain,
+    aliasId,
+    scriptId: script.id,
+  });
+  if (!res) return;
 
   if (res.error) {
-    showMsg('detail-msg', 'error', friendlyError({ message: res.error, status: res.status }));
+    showSieveListError(friendlyError({ message: res.error, status: res.status }));
   } else {
     await openSieveList();
   }
@@ -690,7 +834,7 @@ async function activateSieve(script: SieveScript): Promise<void> {
 function confirmDeleteSieve(script: SieveScript): void {
   currentSieveScript = script;
   document.getElementById('modal-sieve-delete-name')!.textContent = script.name;
-  document.getElementById('modal-sieve-delete')!.classList.remove('hidden');
+  openModal('modal-sieve-delete', 'modal-sieve-delete-cancel');
 }
 
 async function executeDeleteSieve(): Promise<void> {
@@ -698,17 +842,17 @@ async function executeDeleteSieve(): Promise<void> {
   const domain = currentDomain;
   const aliasId = currentAlias.id;
 
-  document.getElementById('modal-sieve-delete')!.classList.add('hidden');
-  showGlobalLoading(true);
-
-  const res = await send({ type: 'deleteSieveScript', domain, aliasId, scriptId: currentSieveScript.id });
-  showGlobalLoading(false);
+  closeModal('modal-sieve-delete');
+  const res = await sendMutation('sieveList', {
+    type: 'deleteSieveScript',
+    domain,
+    aliasId,
+    scriptId: currentSieveScript.id,
+  });
+  if (!res) return;
 
   if (res.error) {
-    const sieveError = document.getElementById('sieve-list-error')!;
-    sieveError.textContent = friendlyError({ message: res.error, status: res.status });
-    sieveError.className = 'error-msg error';
-    sieveError.classList.remove('hidden');
+    showSieveListError(friendlyError({ message: res.error, status: res.status }));
   } else {
     await openSieveList();
   }
@@ -872,12 +1016,12 @@ document.getElementById('sieve-action')!.addEventListener('change', updateAction
 
 document.getElementById('modal-sieve-delete-confirm')!.addEventListener('click', executeDeleteSieve);
 document.getElementById('modal-sieve-delete-cancel')!.addEventListener('click', () => {
-  document.getElementById('modal-sieve-delete')!.classList.add('hidden');
+  closeModal('modal-sieve-delete');
 });
 
 document.getElementById('modal-delete-confirm')!.addEventListener('click', executeDelete);
 document.getElementById('modal-delete-cancel')!.addEventListener('click', () => {
-  document.getElementById('modal-delete')!.classList.add('hidden');
+  closeModal('modal-delete');
 });
 
 document.getElementById('modal-password-copy')!.addEventListener('click', async () => {
@@ -890,7 +1034,7 @@ document.getElementById('modal-password-copy')!.addEventListener('click', async 
   }
 });
 document.getElementById('modal-password-close')!.addEventListener('click', () => {
-  document.getElementById('modal-password')!.classList.add('hidden');
+  closeModal('modal-password');
 });
 
 /* ====== Start ====== */

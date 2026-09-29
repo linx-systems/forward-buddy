@@ -16,6 +16,7 @@ interface MockStorageLocal {
   _store: Record<string, unknown>;
   get(keys: string | string[]): Promise<Record<string, unknown>>;
   set(obj: Record<string, unknown>): Promise<void>;
+  remove(keys: string | string[]): Promise<void>;
   _clear(): void;
 }
 
@@ -85,6 +86,12 @@ interface MockBrowser {
       },
       async set(obj: Record<string, unknown>): Promise<void> {
         Object.assign(this._store, obj);
+      },
+      async remove(keys: string | string[]): Promise<void> {
+        const keyList = typeof keys === 'string' ? [keys] : keys;
+        for (const key of keyList) {
+          delete this._store[key];
+        }
       },
       _clear(): void {
         this._store = {};

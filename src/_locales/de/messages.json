@@ -16,8 +16,8 @@
     "description": "Collapsible instructions header"
   },
   "setupStep1": {
-    "message": "Gehe zu forwardemail.net/my-account/security",
-    "description": "Setup step 1"
+    "message": "Gehe zu ",
+    "description": "Setup step 1 prefix before the security page link"
   },
   "setupStep2": {
     "message": "Scrolle zum Abschnitt \"API Tokens\"",
@@ -498,5 +498,183 @@
   "btnRemoveCondition": {
     "message": "Entfernen",
     "description": "Button to remove a condition row"
+  },
+  "tooltipSettings": {
+    "message": "Einstellungen",
+    "description": "Tooltip for the popup settings button"
+  },
+  "btnDeleteAlias": {
+    "message": "Alias löschen",
+    "description": "Button to delete an alias"
+  },
+  "btnDeleteScript": {
+    "message": "Skript löschen",
+    "description": "Button to delete a Sieve script"
+  },
+  "titleDeleteAlias": {
+    "message": "Alias löschen",
+    "description": "Alias deletion dialog title"
+  },
+  "titleDeleteScript": {
+    "message": "Skript löschen",
+    "description": "Sieve script deletion dialog title"
+  },
+  "errorDomainRequired": {
+    "message": "Wähle eine Domain, bevor du einen Alias erstellst.",
+    "description": "Error when alias creation has no valid domain"
+  },
+  "msgDisplayPartialMatches": {
+    "message": "Einige Domains konnten nicht geprüft werden. Die Ergebnisse können unvollständig sein.",
+    "description": "Warning when alias checks partially fail but include matches"
+  },
+  "msgDisplayPartialNoMatch": {
+    "message": "Die Alias-Prüfung konnte nicht vollständig durchgeführt werden. Es kann keine fehlende Übereinstimmung bestätigt werden.",
+    "description": "Warning when all checked domains have no match but some checks failed"
+  },
+  "badgeIncomplete": {
+    "message": "Alias-Prüfung unvollständig",
+    "description": "Badge warning when a message alias check is incomplete"
+  },
+  "badgeMatchesIncomplete": {
+    "message": "$1 Aliase gefunden — unvollständig",
+    "description": "Badge summary when matches were found but checks were incomplete"
+  },
+  "tooltipToggleToken": {
+    "message": "API-Token anzeigen oder ausblenden",
+    "description": "Tooltip and accessible label for token visibility control"
+  },
+  "labelDemoMode": {
+    "message": "Demomodus",
+    "description": "Demo mode setting label"
+  },
+  "hintDemoMode": {
+    "message": "Zeigt Beispieldaten statt echter Aliase. Nützlich für Screenshots.",
+    "description": "Demo mode explanation"
+  },
+  "titleAccountControls": {
+    "message": "Konto",
+    "description": "Settings account controls heading"
+  },
+  "btnDisconnect": {
+    "message": "Verbindung trennen",
+    "description": "Button to remove saved local credentials"
+  },
+  "titleActivityHistory": {
+    "message": "Aktivitätsverlauf",
+    "description": "Heading for local activity history"
+  },
+  "hintActivityHistory": {
+    "message": "Kürzliche Aktivitäten werden auf diesem Gerät gespeichert. Tokens und generierte Passwörter sind nie enthalten.",
+    "description": "Activity history privacy explanation"
+  },
+  "activityHistoryEmpty": {
+    "message": "Keine kürzlichen Aktivitäten.",
+    "description": "Empty activity history message"
+  },
+  "btnClearHistory": {
+    "message": "Verlauf löschen",
+    "description": "Button to remove local activity history"
+  },
+  "titleDisconnect": {
+    "message": "Konto trennen",
+    "description": "Disconnect confirmation dialog title"
+  },
+  "confirmDisconnect": {
+    "message": "Gespeicherten API-Token und Kontoinformationen von diesem Gerät entfernen?",
+    "description": "Disconnect confirmation text"
+  },
+  "disconnectSuccess": {
+    "message": "Verbindung getrennt.",
+    "description": "Success message after local credential removal"
+  },
+  "historyCleared": {
+    "message": "Aktivitätsverlauf gelöscht.",
+    "description": "Success message after clearing activity history"
+  },
+  "auditActionCredentialsSaved": {
+    "message": "Zugangsdaten gespeichert",
+    "description": "Activity action label"
+  },
+  "auditActionCredentialsRemoved": {
+    "message": "Zugangsdaten entfernt",
+    "description": "Activity action label"
+  },
+  "auditActionAliasCreated": {
+    "message": "Alias erstellt",
+    "description": "Activity action label"
+  },
+  "auditActionAliasUpdated": {
+    "message": "Alias aktualisiert",
+    "description": "Activity action label"
+  },
+  "auditActionAliasDeleted": {
+    "message": "Alias gelöscht",
+    "description": "Activity action label"
+  },
+  "auditActionPasswordGenerated": {
+    "message": "Passwort generiert",
+    "description": "Activity action label"
+  },
+  "auditActionSieveCreated": {
+    "message": "Sieve-Skript erstellt",
+    "description": "Activity action label"
+  },
+  "auditActionSieveUpdated": {
+    "message": "Sieve-Skript aktualisiert",
+    "description": "Activity action label"
+  },
+  "auditActionSieveDeleted": {
+    "message": "Sieve-Skript gelöscht",
+    "description": "Activity action label"
+  },
+  "auditActionSieveActivated": {
+    "message": "Sieve-Skript aktiviert",
+    "description": "Activity action label"
+  },
+  "auditActionUnknown": {
+    "message": "Kontoaktivität",
+    "description": "Fallback activity action label"
+  },
+  "auditStatusSuccess": {
+    "message": "Erfolgreich",
+    "description": "Activity success status"
+  },
+  "auditStatusFailure": {
+    "message": "Fehlgeschlagen",
+    "description": "Activity failure status"
+  },
+  "auditErrorAuthentication": {
+    "message": "Authentifizierungsfehler",
+    "description": "Activity error category"
+  },
+  "auditErrorNetwork": {
+    "message": "Netzwerkfehler",
+    "description": "Activity error category"
+  },
+  "auditErrorRateLimited": {
+    "message": "Anfragelimit erreicht",
+    "description": "Activity error category"
+  },
+  "auditErrorRequest": {
+    "message": "Anfragefehler",
+    "description": "Activity error category"
+  },
+  "auditErrorServer": {
+    "message": "Serverfehler",
+    "description": "Activity error category"
+  },
+  "auditErrorUnknown": {
+    "message": "Unbekannter Fehler",
+    "description": "Fallback activity error category"
+  },
+
+  "unexpectedError": {
+    "message": "Ein unerwarteter Fehler ist aufgetreten.",
+    "description": "Fallback message for unexpected background errors"
+  },
+
+  "moreRecipients": {
+    "message": "$1 weitere",
+    "description": "Suffix indicating additional forwarding recipients"
   }
 }

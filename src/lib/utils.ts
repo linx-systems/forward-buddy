@@ -2,12 +2,20 @@
  * Utility helpers: alias type detection, formatting.
  */
 
-import type { Alias, AliasTypeInfo, TruncateResult } from '../types/forward-email.js';
+import type { AliasTypeInfo, TruncateResult } from '../types/forward-email.js';
 
 const REGEX_ALIAS_PATTERN = /^\/(.+)\/([ig]{0,2})$/;
 const MAX_REGEX_SOURCE_LENGTH = 200;
 
-function parseAliasRegex(name: string): { source: string; flags: string } | null {
+export interface AliasRegex {
+  source: string;
+  flags: string;
+}
+
+/**
+ * Recognize a bounded alias regex without evaluating account-provided code.
+ */
+export function parseAliasRegex(name: string): AliasRegex | null {
   const match = name.match(REGEX_ALIAS_PATTERN);
   if (!match) return null;
 
@@ -15,7 +23,7 @@ function parseAliasRegex(name: string): { source: string; flags: string } | null
   if (source.length > MAX_REGEX_SOURCE_LENGTH) return null;
 
   const flags = match[2] || '';
-  if (new Set(flags).size !== flags.length) return null;
+  if (flags.length === 2 && flags[0] === flags[1]) return null;
 
   return { source, flags };
 }
@@ -138,26 +146,4 @@ export function parseEmailAddress(email: string): { local: string; domain: strin
   const simple = email.match(/^([^@\s]+)@([^\s]+)$/);
   if (simple) return { local: simple[1].toLowerCase(), domain: simple[2].toLowerCase() };
   return null;
-}
-
-/**
- * Check if an email's local part matches an alias on the same domain.
- * Handles direct, catch-all, and regex alias types.
- */
-export function matchesAlias(localPart: string, domain: string, alias: Alias, fallbackDomain?: string): boolean {
-  const aliasDomain = resolveDomain(alias, fallbackDomain);
-  if (aliasDomain.toLowerCase() !== domain.toLowerCase()) return false;
-  if (alias.name === '*') return true;
-  const regexMatch = parseAliasRegex(alias.name);
-  if (regexMatch) {
-    try {
-      const re = new RegExp(regexMatch.source, regexMatch.flags || undefined);
-      // Quick sanity check with empty string to detect catastrophic backtracking patterns
-      re.test('');
-      return re.test(localPart);
-    } catch {
-      return false;
-    }
-  }
-  return alias.name.toLowerCase() === localPart.toLowerCase();
 }

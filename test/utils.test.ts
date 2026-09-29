@@ -10,7 +10,6 @@ import {
   splitLines,
   splitCommas,
   resolveDomain,
-  matchesAlias,
   toDateInputValue,
 } from '../src/lib/utils.js';
 
@@ -249,18 +248,5 @@ describe('toDateInputValue', () => {
 
   it('returns empty string for invalid date', () => {
     assert.equal(toDateInputValue('not-a-date'), '');
-  });
-});
-
-/* ====== matchesAlias ====== */
-describe('matchesAlias', () => {
-  it('matches regex aliases with the g flag', () => {
-    const alias = { id: '1', name: '/^test.*/g', domain: 'example.com' } as any;
-    assert.equal(matchesAlias('test-user', 'example.com', alias), true);
-  });
-
-  it('matches regex aliases with combined gi flags', () => {
-    const alias = { id: '1', name: '/^Test.*/gi', domain: 'example.com' } as any;
-    assert.equal(matchesAlias('test-user', 'example.com', alias), true);
   });
 });

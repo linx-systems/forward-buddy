@@ -169,6 +169,15 @@ h1 {
   background: var(--border);
 }
 
+.btn-danger {
+  background: var(--error);
+  color: #fff;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #dc2626;
+}
+
 /* Test result */
 .test-result {
   padding: 10px 14px;
@@ -201,4 +210,72 @@ hr {
   margin: 0.25rem 0 0;
   font-size: 0.8rem;
   color: var(--fg-muted);
+}
+
+/* Account and activity controls */
+.account-controls,
+.activity-history {
+  border-top: 1px solid var(--border);
+  margin-top: 24px;
+  padding-top: 20px;
+}
+
+.account-controls h2,
+.activity-history h2 {
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+.activity-history ul {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  margin: 12px 0;
+  padding: 0;
+}
+
+.activity-history li {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 13px;
+  line-height: 1.4;
+  padding: 8px 10px;
+}
+
+.activity-history .event-meta {
+  color: var(--fg-muted);
+  display: block;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+/* Confirmation dialog */
+.modal-overlay {
+  align-items: center;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 16px;
+  position: fixed;
+}
+
+.modal {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  max-width: 440px;
+  padding: 20px;
+  width: 100%;
+}
+
+.modal h2 {
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+.modal p {
+  line-height: 1.45;
 }
