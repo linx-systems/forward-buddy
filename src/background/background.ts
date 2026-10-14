@@ -391,7 +391,26 @@ function errorResponse(error: unknown): { error: string; status?: number } {
   return { error: browser.i18n.getMessage('unexpectedError') };
 }
 
-browser.runtime.onMessage.addListener(async (msg: MessageType, _sender: unknown) => {
+function isSupportedMessage(msg: unknown): msg is MessageType {
+  if (msg === null || typeof msg !== 'object' || !Object.hasOwn(msg, 'type')) return false;
+
+  const { type } = msg as { type: unknown };
+  if (typeof type !== 'string') return false;
+
+  switch (type) {
+    case 'setDemoMode':
+    case 'getDemoMode':
+    case 'saveCredentials':
+    case 'removeCredentials':
+    case 'getAuditEvents':
+    case 'clearAuditEvents':
+      return true;
+    default:
+      return Object.hasOwn(handlers, type) && Object.hasOwn(demoHandlers, type);
+  }
+}
+
+async function dispatchMessage(msg: MessageType) {
   if (msg.type === 'setDemoMode') {
     await browser.storage.local.set({ demoMode: msg.enabled });
     return { data: { demoMode: msg.enabled } };
@@ -435,7 +454,6 @@ browser.runtime.onMessage.addListener(async (msg: MessageType, _sender: unknown)
   const { demoMode } = await browser.storage.local.get('demoMode');
   const source = demoMode === true ? demoHandlers : handlers;
   const handler = source[msg.type];
-  if (!handler) return { error: 'Unknown message type' };
   const details = auditDetails(msg);
   try {
     const data = await handler(msg);
@@ -445,4 +463,9 @@ browser.runtime.onMessage.addListener(async (msg: MessageType, _sender: unknown)
     if (details) await audit.recordAuditEvent(details.action, 'failure', details.target, error).catch(() => {});
     return errorResponse(error);
   }
+}
+
+browser.runtime.onMessage.addListener((msg: unknown, _sender: unknown) => {
+  if (!isSupportedMessage(msg)) return undefined;
+  return dispatchMessage(msg);
 });

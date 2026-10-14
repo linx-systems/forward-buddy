@@ -394,12 +394,105 @@ describe('activateSieveScript handler', () => {
   });
 });
 
-/* ====== Unknown message type ====== */
-describe('unknown message type', () => {
-  it('returns error for unknown type', async () => {
-    const res = await send({ type: 'nonexistent' });
-    assert.ok(res.error);
-    assert.ok(res.error.includes('Unknown'));
+/* ====== Message listener dispatch boundary ====== */
+function getRuntimeListener(): (message: unknown, sender: unknown) => Promise<unknown> | undefined {
+  const listeners = (globalThis as any).browser.runtime._listeners;
+  return listeners[listeners.length - 1];
+}
+
+describe('message listener dispatch boundary', () => {
+  it('ignores unsupported messages synchronously', () => {
+    const listener = getRuntimeListener();
+    const inheritedType = Object.create({ type: 'getDomains' });
+    const unsupportedMessages = [
+      null,
+      undefined,
+      inheritedType,
+      {},
+      { type: null },
+      { type: 123 },
+      { type: 'nonexistent' },
+      { type: 'constructor' },
+      { type: 'toString' },
+    ];
+
+    for (const message of unsupportedMessages) {
+      assert.equal(listener(message, {}), undefined);
+    }
+  });
+
+  it('keeps special messages asynchronous with response envelopes', async () => {
+    const listener = getRuntimeListener();
+
+    const setDemoMode = listener({ type: 'setDemoMode', enabled: false }, {});
+    assert.ok(setDemoMode instanceof Promise);
+    assert.deepEqual(await setDemoMode, { data: { demoMode: false } });
+
+    const getDemoMode = listener({ type: 'getDemoMode' }, {});
+    assert.ok(getDemoMode instanceof Promise);
+    assert.deepEqual(await getDemoMode, { data: { demoMode: false } });
+
+    const saveCredentials = listener({
+      type: 'saveCredentials',
+      token: 'test-token',
+      email: 'user@example.test',
+      plan: 'Enhanced',
+    }, {});
+    assert.ok(saveCredentials instanceof Promise);
+    assert.deepEqual(await saveCredentials, { data: { ok: true } });
+
+    const removeCredentials = listener({ type: 'removeCredentials' }, {});
+    assert.ok(removeCredentials instanceof Promise);
+    assert.deepEqual(await removeCredentials, { data: { ok: true } });
+
+    const auditEvents = listener({ type: 'getAuditEvents' }, {});
+    assert.ok(auditEvents instanceof Promise);
+    assert.ok(Array.isArray((await auditEvents as { data: unknown[] }).data));
+
+    const clearAuditEvents = listener({ type: 'clearAuditEvents' }, {});
+    assert.ok(clearAuditEvents instanceof Promise);
+    assert.deepEqual(await clearAuditEvents, { data: { ok: true } });
+  });
+
+  it('keeps normal handler success and failure responses asynchronous', async () => {
+    const listener = getRuntimeListener();
+    fetchMock.mock.mockImplementation(async () =>
+      mockResponse(200, { email: 'user@example.test', plan: 'Free' }),
+    );
+
+    const success = listener({ type: 'testConnection', token: 'test-token' }, {});
+    assert.ok(success instanceof Promise);
+    assert.deepEqual(await success, {
+      data: { email: 'user@example.test', plan: 'Free' },
+    });
+
+    fetchMock.mock.mockImplementation(async () =>
+      mockResponse(401, { message: 'Invalid' }, false),
+    );
+    const failure = listener({ type: 'testConnection', token: 'bad-token' }, {});
+    assert.ok(failure instanceof Promise);
+    assert.deepEqual(await failure, { error: 'Invalid', status: 401 });
+  });
+
+  it('keeps demo handler success and failure responses asynchronous', async () => {
+    const listener = getRuntimeListener();
+    await listener({ type: 'setDemoMode', enabled: true }, {});
+
+    const success = listener({ type: 'testConnection', token: 'ignored' }, {});
+    assert.ok(success instanceof Promise);
+    assert.deepEqual(await success, {
+      data: { email: 'john@example.com', plan: 'Enhanced Protection' },
+    });
+    assert.equal(fetchMock.mock.calls.length, 0);
+
+    const failure = listener({
+      type: 'getSieveScript',
+      domain: 'missing.example.test',
+      aliasId: 'missing-alias',
+      scriptId: 'missing-script',
+    }, {});
+    assert.ok(failure instanceof Promise);
+    assert.deepEqual(await failure, { error: 'Script not found' });
   });
 });
 

@@ -108,6 +108,8 @@ bun run package:source   # Create source zip for ATN review
 
 TypeScript is compiled into `dist/` via `tsc`. Static files (HTML, CSS, icons, locales) are synced by `scripts/sync-static.mjs`. The XPI is built from `dist/` only — no source files or dev artifacts are included.
 
+The background runtime message listener responds asynchronously only to supported message types. Unsupported messages are ignored synchronously so other listeners can respond.
+
 ## Privacy
 
 See [PRIVACY.md](PRIVACY.md) for the full privacy policy.
